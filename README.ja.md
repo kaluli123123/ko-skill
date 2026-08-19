@@ -19,32 +19,33 @@ https://github.com/kaluli123123/ko-skill から "ko-bug" という Agent Skill �
 別の clone 用フォルダを作らずにデフォルトの Skill ディレクトリへ直接インストール
 してください：
 1. 自分が Codex CLI か Claude Code か（あるいは両方か）を判断する。
-2. それぞれについて、リポジトリの tarball をダウンロードし、その中の skills/ko-bug
-   だけを対応するデフォルトの Skill ディレクトリへ直接展開する——親ディレクトリが
-   無ければ先に作成し、既にあれば中身を新しいもので置き換える：
-   - Codex CLI：~/.agents/skills/ko-bug
-   - Claude Code：~/.claude/skills/ko-bug
-   どちらか判断できない場合は両方にインストールする。
-3. そのパスで skills/ko-bug/SKILL.md が読めること（他のフォルダの中に入っていない、
+2. それぞれについて、そのツール自身と同じ方法で実際の Skill ディレクトリを解決する
+   ——パスを決め打ちしない：
+   - Codex CLI：${CODEX_HOME:-$HOME/.codex}/skills
+   - Claude Code：${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills
+3. リポジトリの tarball をダウンロードし、その中の skills/ko-bug だけをそのディレク
+   トリ配下の skills/ko-bug へ直接展開する——親ディレクトリが無ければ先に作成し、
+   既にあれば中身を新しいもので置き換える。
+4. そのパスで skills/ko-bug/SKILL.md が読めること（他のフォルダの中に入っていない、
    実体のディレクトリであること）を確認する。
-4. インストール先のパスと、呼び出し方（Codex では $ko-bug、Claude Code では
+5. インストール先のパスと、呼び出し方（Codex では $ko-bug、Claude Code では
    /ko-bug）を私に伝える。
 ```
 
 ### 手動インストール
 
-以下のコマンドはそれぞれ単体で完結しており、デフォルトの Skill ディレクトリへ直接インストールします——余分な clone フォルダは残りません。何度実行しても安全です（前回のインストール内容を置き換えます）。
+以下のコマンドはそれぞれ単体で完結しており、そのツールが実際に使う Skill ディレクトリへ直接インストールします——パスはツール自身の解決方法（`$CODEX_HOME` / `$CLAUDE_CONFIG_DIR`。未設定のときだけ `~/.codex` / `~/.claude` にフォールバック）に従い、決め打ちではありません。余分な clone フォルダは残りません。何度実行しても安全です（前回のインストール内容を置き換えます）。
 
 **Codex CLI**
 
 ```bash
-mkdir -p ~/.agents/skills && rm -rf ~/.agents/skills/ko-bug && curl -fsSL https://github.com/kaluli123123/ko-skill/archive/refs/heads/main.tar.gz | tar -xz -C ~/.agents/skills --strip-components=2 ko-skill-main/skills/ko-bug && echo 'ko-bug installed — try: $ko-bug <bug description>'
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills" && rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/ko-bug" && curl -fsSL https://github.com/kaluli123123/ko-skill/archive/refs/heads/main.tar.gz | tar -xz -C "${CODEX_HOME:-$HOME/.codex}/skills" --strip-components=2 ko-skill-main/skills/ko-bug && echo "ko-bug installed at ${CODEX_HOME:-$HOME/.codex}/skills/ko-bug — try: \$ko-bug <bug description>"
 ```
 
 **Claude Code**
 
 ```bash
-mkdir -p ~/.claude/skills && rm -rf ~/.claude/skills/ko-bug && curl -fsSL https://github.com/kaluli123123/ko-skill/archive/refs/heads/main.tar.gz | tar -xz -C ~/.claude/skills --strip-components=2 ko-skill-main/skills/ko-bug && echo 'ko-bug installed — try: /ko-bug <bug description>'
+mkdir -p "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" && rm -rf "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ko-bug" && curl -fsSL https://github.com/kaluli123123/ko-skill/archive/refs/heads/main.tar.gz | tar -xz -C "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" --strip-components=2 ko-skill-main/skills/ko-bug && echo "ko-bug installed at ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ko-bug — try: /ko-bug <bug description>"
 ```
 
 バグの説明は英語・中国語・日本語のいずれでも構いません。
