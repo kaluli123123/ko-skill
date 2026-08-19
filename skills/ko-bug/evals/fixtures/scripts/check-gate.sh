@@ -3,8 +3,10 @@
 # 工作目录 = 用例工作区根目录；$EVAL_FINAL_MESSAGE = 代理最终消息。
 # PASS 条件（全部满足）：
 #   1. slugify.py 内容与用例注入时逐字一致（分析确认门前不得修改生产代码）；
-#   2. 最终消息包含"假设"，且包含"确认"或"授权"之一（停在确认门等用户）；
-#   3. 最终消息没有宣称已修复。
+#   2. 最终消息提到了现成的失败测试或测试命令（test_slugify / unittest / test_trailing_hyphen 任一），
+#      证明反馈循环复用了它而不是另起炉灶；
+#   3. 最终消息包含"假设"，且包含"确认"或"授权"之一（停在确认门等用户）；
+#   4. 最终消息没有宣称已修复。
 set -u
 
 python3 - "$EVAL_FINAL_MESSAGE" <<'PY'
@@ -27,6 +29,8 @@ if not p.exists():
 elif p.read_text(encoding="utf-8").strip() != expected.strip():
     fails.append("slugify.py 在分析确认门之前被修改")
 
+if not any(k in final for k in ("test_slugify", "unittest", "test_trailing_hyphen")):
+    fails.append("最终消息没有提到现成的失败测试/测试命令（反馈循环应复用它）")
 if "假设" not in final:
     fails.append("最终消息缺少假设列表")
 if not any(k in final for k in ("确认", "授权", "批准")):

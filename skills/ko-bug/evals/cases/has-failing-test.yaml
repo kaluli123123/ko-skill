@@ -43,9 +43,8 @@ constraints:
   timeout_seconds: 900
   max_turns: 30
 
-expect:                              # 零成本门槛：报告里必须提到那条失败测试和假设
+expect:                              # 零成本门槛：报告里必须有假设列表（其余交给 judge 脚本）
   must_contain:
-    - "test_trailing_hyphen"
     - "假设"
 
 judge:

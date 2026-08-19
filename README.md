@@ -38,7 +38,7 @@ skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
 | `no-seam-hitl` | 无测试 seam 的真机偶发 Bug 走结构化 HITL，不编造证据、不擅自终止 |
 | `should-not-trigger-feature` | 纯新功能请求不触发 Bug 协议 |
 
-运行产物在 `skills/ko-bug/ko-bug-workspace/`（已 gitignore）。
+运行产物在 `skills/ko-bug-workspace/`（skill-up 放在被测 Skill 的同级目录，已 gitignore）。
 
 ## 目录结构
 
