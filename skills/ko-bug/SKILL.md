@@ -1,6 +1,6 @@
 ---
 name: ko-bug
-description: Evidence-first bug diagnosis and fix protocol. Use it when the user types $ko-bug, or asks to reproduce, root-cause, or fix a crash, error, wrong result, regression, flaky failure, or performance regression — the same trigger conditions apply whether the request is written in English, Chinese (中文), or Japanese (日本語). Not for new features, UX polish, or performance tuning of behavior that is already correct; architectural changes, multi-component rework, or work that needs a pre-approved task list are out of scope.
+description: Evidence-first bug diagnosis and fix protocol. Use it when the user names this skill directly, or asks to reproduce, root-cause, or fix a crash, error, wrong result, regression, flaky failure, or performance regression — the same trigger conditions apply whether the request is written in English, Chinese (中文), or Japanese (日本語). Not for new features, UX polish, or performance tuning of behavior that is already correct; architectural changes, multi-component rework, or work that needs a pre-approved task list are out of scope.
 ---
 
 # Evidence-first Bugfix

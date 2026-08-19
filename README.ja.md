@@ -2,7 +2,7 @@
 
 🌐 [English](README.md) | [中文](README.zh-CN.md) | **日本語**
 
-Codex CLI（`$name` で呼び出し）と Claude Code（`/name` で呼び出し）の両方で使える、独立した Agent Skill 集です。
+独立した Agent Skill 集です——プレーンな指示ファイルで、特定のベンダーや製品に縛られず、どの AI でも使えます。
 
 | Skill | 用途 |
 |-------|------|
@@ -10,31 +10,37 @@ Codex CLI（`$name` で呼び出し）と Claude Code（`/name` で呼び出し�
 
 ## インストール
 
-### AI アシスタントにインストールしてもらう
+### どんな AI でも使える——「Skill」機能は不要
 
-以下を Claude Code、Codex CLI、またはシェルを実行できる任意のコーディングエージェントに貼り付けてください：
+各 Skill は単なる `SKILL.md` ファイルです：平文の指示にすぎません。テキストを読める AI であれば、正式な Skill 機構の有無にかかわらず従うことができます——チャット、システムプロンプト、カスタム指示欄などに以下を貼り付けてください：
 
 ```text
-https://github.com/kaluli123123/ko-skill から "ko-bug" という Agent Skill を、
-別の clone 用フォルダを作らずにデフォルトの Skill ディレクトリへ直接インストール
-してください：
-1. 自分が Codex CLI か Claude Code か（あるいは両方か）を判断する。
-2. それぞれについて、そのツール自身と同じ方法で実際の Skill ディレクトリを解決する
-   ——パスを決め打ちしない：
-   - Codex CLI：${CODEX_HOME:-$HOME/.codex}/skills
-   - Claude Code：${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills
-3. リポジトリの tarball をダウンロードし、その中の skills/ko-bug だけをそのディレク
-   トリ配下の skills/ko-bug へ直接展開する——親ディレクトリが無ければ先に作成し、
-   既にあれば中身を新しいもので置き換える。
-4. そのパスで skills/ko-bug/SKILL.md が読めること（他のフォルダの中に入っていない、
-   実体のディレクトリであること）を確認する。
-5. インストール先のパスと、呼び出し方（Codex では $ko-bug、Claude Code では
-   /ko-bug）を私に伝える。
+Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-bug/SKILL.md
+and follow it for the rest of this conversation.
 ```
 
-### 手動インストール
+### 自分の AI にネイティブな Skill ディレクトリがあるなら、自分でインストールさせる
 
-以下のコマンドはそれぞれ単体で完結しており、そのツールが実際に使う Skill ディレクトリへ直接インストールします——パスはツール自身の解決方法（`$CODEX_HOME` / `$CLAUDE_CONFIG_DIR`。未設定のときだけ `~/.codex` / `~/.claude` にフォールバック）に従い、決め打ちではありません。余分な clone フォルダは残りません。何度実行しても安全です（前回のインストール内容を置き換えます）。
+多くのコーディングエージェントは、専用ディレクトリから `SKILL.md` を自動的に読み込みます。あなたのツールがそうであれば、以下をそのエージェント自身に貼り付けてください（シェルを実行できるので、あなたが調べなくても自分の流儀を自分で把握できます）：
+
+```text
+https://github.com/kaluli123123/ko-skill から "ko-bug" という Agent Skill を、自分自身の
+Skill ディレクトリへインストールしてください——別の clone 用フォルダは作らないこと：
+1. 自分のツールのユーザーレベル Skill ディレクトリがどこかを調べる（自分のドキュメント
+   や設定を確認し、SKILL.md を読み込む規則を探す——例えば $CODEX_HOME や
+   $CLAUDE_CONFIG_DIR のような環境変数、または設定ディレクトリ配下の固定パスなど）。
+2. リポジトリの tarball をダウンロードし、その中の skills/ko-bug だけをそのディレク
+   トリ配下の skills/ko-bug へ直接展開する——親ディレクトリが無ければ先に作成し、既に
+   あれば中身を新しいもので置き換える。
+3. そのパスで skills/ko-bug/SKILL.md が読めること（他のフォルダの中に入っていない、
+   実体のディレクトリであること）を確認する。
+4. インストール先のパスと、Skill の呼び出し方（あなたのツール自身の呼び出し方式）を
+   私に伝える。
+```
+
+### 確認済みの例
+
+以下の 2 つは具体的に動作確認済みです——使っているならそのままコピペで使えますが、対応がこの 2 つに限られるわけではありません。各コマンドは単体で完結しており、そのツール自身と同じ方法（`$CODEX_HOME` / `$CLAUDE_CONFIG_DIR`。未設定のときだけ `~/.codex` / `~/.claude` にフォールバック）で実際の Skill ディレクトリを解決し、余分な clone フォルダを残さず、何度実行しても安全です。
 
 **Codex CLI**
 
@@ -48,11 +54,11 @@ mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills" && rm -rf "${CODEX_HOME:-$HOME/.co
 mkdir -p "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" && rm -rf "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ko-bug" && curl -fsSL https://github.com/kaluli123123/ko-skill/archive/refs/heads/main.tar.gz | tar -xz -C "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" --strip-components=2 ko-skill-main/skills/ko-bug && echo "ko-bug installed at ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ko-bug — try: /ko-bug <bug description>"
 ```
 
-バグの説明は英語・中国語・日本語のいずれでも構いません。
+バグの説明は英語・中国語・日本語のいずれでも構いません。どの AI に渡しても同じです。
 
 ## 評価（skill-up）
 
-各 Skill はそれぞれ独自の `evals/` を同梱しており、[skill-up](https://alibaba.github.io/skill-up/) で実行します：
+各 Skill はそれぞれ独自の `evals/` を同梱しており、[skill-up](https://alibaba.github.io/skill-up/) で実行します——skill-up 自体が特定のエンジンに縛られないため、同じテストスイートを異なる AI バックエンドに向けて実行できます：
 
 ```bash
 skill-up validate skills/ko-bug/evals/eval.yaml
@@ -77,8 +83,8 @@ skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
 ```
 skills/
   ko-bug/
-    SKILL.md              # Skill 本体
-    agents/openai.yaml    # Codex 用インターフェースメタデータ
+    SKILL.md              # Skill 本体——どの AI にとっても本当に必要なのはこのファイルだけ
+    agents/openai.yaml    # 任意：Codex 専用のインターフェースメタデータ。他のツールは無視する
     evals/
       eval.yaml
       cases/*.yaml
