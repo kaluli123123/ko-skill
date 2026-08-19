@@ -15,32 +15,34 @@
 把下面这段贴进 Claude Code、Codex CLI，或任何能跑 shell 命令的 coding agent：
 
 ```text
-从 https://github.com/kaluli123123/ko-skill 安装 "ko-bug" 这个 Agent Skill：
-1. 在 ~/.local/share/ko-skill 克隆或更新这个仓库（不存在就 git clone 这个 URL 到该路径；
-   已存在就执行 `git -C ~/.local/share/ko-skill pull`）。
-2. 判断你自己是 Codex CLI 还是 Claude Code（或者两者都是），然后把该仓库里的
-   skills/ko-bug 软链到对应的技能目录——目标目录的父目录不存在就先建好：
+从 https://github.com/kaluli123123/ko-skill 安装 "ko-bug" 这个 Agent Skill，直接装到
+默认的技能目录——不要另建一个 clone 文件夹：
+1. 判断你自己是 Codex CLI 还是 Claude Code（或者两者都是）。
+2. 针对每一种，下载该仓库的 tarball，只把里面的 skills/ko-bug 解压到它对应的默认技能
+   目录——目录不存在就先建好，已存在就替换掉旧内容：
    - Codex CLI：~/.agents/skills/ko-bug
    - Claude Code：~/.claude/skills/ko-bug
-   分不清是哪一个就两个软链都建。
-3. 核实软链能正确解析，且能通过它读到 skills/ko-bug/SKILL.md。
-4. 告诉我安装到了哪些路径，以及怎么调用它（Codex 里用 $ko-bug，Claude Code 里用 /ko-bug）。
+   分不清是哪一个就两个都装。
+3. 核实 skills/ko-bug/SKILL.md 能在该路径下读到（是一个真实目录，没有嵌在别的文件夹
+   里）。
+4. 告诉我安装到了哪些路径，以及怎么调用它（Codex 里用 $ko-bug，Claude Code 里用
+   /ko-bug）。
 ```
 
 ### 手动安装
 
-下面每条命令都是自包含的：直接跑这一条即可，不需要单独的 clone 步骤。它会把仓库克隆（或更新）到 `~/.local/share/ko-skill`，再把 `skills/ko-bug` 软链过去；可以重复执行。
+下面每条命令都是自包含的，会直接装到默认的技能目录——不会留下额外的 clone 文件夹。可以重复执行（会替换掉上一次的安装）。
 
 **Codex CLI**
 
 ```bash
-mkdir -p ~/.agents/skills && (git clone https://github.com/kaluli123123/ko-skill.git ~/.local/share/ko-skill 2>/dev/null || git -C ~/.local/share/ko-skill pull -q) && ln -sfn ~/.local/share/ko-skill/skills/ko-bug ~/.agents/skills/ko-bug && echo 'ko-bug installed — try: $ko-bug <bug description>'
+mkdir -p ~/.agents/skills && rm -rf ~/.agents/skills/ko-bug && curl -fsSL https://github.com/kaluli123123/ko-skill/archive/refs/heads/main.tar.gz | tar -xz -C ~/.agents/skills --strip-components=2 ko-skill-main/skills/ko-bug && echo 'ko-bug installed — try: $ko-bug <bug description>'
 ```
 
 **Claude Code**
 
 ```bash
-mkdir -p ~/.claude/skills && (git clone https://github.com/kaluli123123/ko-skill.git ~/.local/share/ko-skill 2>/dev/null || git -C ~/.local/share/ko-skill pull -q) && ln -sfn ~/.local/share/ko-skill/skills/ko-bug ~/.claude/skills/ko-bug && echo 'ko-bug installed — try: /ko-bug <bug description>'
+mkdir -p ~/.claude/skills && rm -rf ~/.claude/skills/ko-bug && curl -fsSL https://github.com/kaluli123123/ko-skill/archive/refs/heads/main.tar.gz | tar -xz -C ~/.claude/skills --strip-components=2 ko-skill-main/skills/ko-bug && echo 'ko-bug installed — try: /ko-bug <bug description>'
 ```
 
 用英文、中文或日文描述 bug 都可以。

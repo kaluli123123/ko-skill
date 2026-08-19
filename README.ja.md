@@ -15,36 +15,36 @@ Codex CLI（`$name` で呼び出し）と Claude Code（`/name` で呼び出し�
 以下を Claude Code、Codex CLI、またはシェルを実行できる任意のコーディングエージェントに貼り付けてください：
 
 ```text
-https://github.com/kaluli123123/ko-skill から "ko-bug" という Agent Skill を
-インストールしてください：
-1. ~/.local/share/ko-skill にリポジトリをクローンまたは更新する（存在しなければ
-   そのパスに git clone、存在すれば `git -C ~/.local/share/ko-skill pull`）。
-2. 自分が Codex CLI か Claude Code か（あるいは両方か）を判断し、そのリポジトリの
-   skills/ko-bug を対応する Skill ディレクトリにシンボリックリンクする——親ディレ
-   クトリが無ければ先に作成する：
+https://github.com/kaluli123123/ko-skill から "ko-bug" という Agent Skill を、
+別の clone 用フォルダを作らずにデフォルトの Skill ディレクトリへ直接インストール
+してください：
+1. 自分が Codex CLI か Claude Code か（あるいは両方か）を判断する。
+2. それぞれについて、リポジトリの tarball をダウンロードし、その中の skills/ko-bug
+   だけを対応するデフォルトの Skill ディレクトリへ直接展開する——親ディレクトリが
+   無ければ先に作成し、既にあれば中身を新しいもので置き換える：
    - Codex CLI：~/.agents/skills/ko-bug
    - Claude Code：~/.claude/skills/ko-bug
-   どちらか判断できない場合は両方にシンボリックリンクを作る。
-3. シンボリックリンクが正しく解決され、それ経由で skills/ko-bug/SKILL.md が読める
-   ことを確認する。
+   どちらか判断できない場合は両方にインストールする。
+3. そのパスで skills/ko-bug/SKILL.md が読めること（他のフォルダの中に入っていない、
+   実体のディレクトリであること）を確認する。
 4. インストール先のパスと、呼び出し方（Codex では $ko-bug、Claude Code では
    /ko-bug）を私に伝える。
 ```
 
 ### 手動インストール
 
-以下のコマンドはそれぞれ単体で完結しています。個別に clone する手順は不要で、これ 1 行を実行するだけです。`~/.local/share/ko-skill` にリポジトリをクローン（または更新）し、`skills/ko-bug` をシンボリックリンクします。何度実行しても安全です。
+以下のコマンドはそれぞれ単体で完結しており、デフォルトの Skill ディレクトリへ直接インストールします——余分な clone フォルダは残りません。何度実行しても安全です（前回のインストール内容を置き換えます）。
 
 **Codex CLI**
 
 ```bash
-mkdir -p ~/.agents/skills && (git clone https://github.com/kaluli123123/ko-skill.git ~/.local/share/ko-skill 2>/dev/null || git -C ~/.local/share/ko-skill pull -q) && ln -sfn ~/.local/share/ko-skill/skills/ko-bug ~/.agents/skills/ko-bug && echo 'ko-bug installed — try: $ko-bug <bug description>'
+mkdir -p ~/.agents/skills && rm -rf ~/.agents/skills/ko-bug && curl -fsSL https://github.com/kaluli123123/ko-skill/archive/refs/heads/main.tar.gz | tar -xz -C ~/.agents/skills --strip-components=2 ko-skill-main/skills/ko-bug && echo 'ko-bug installed — try: $ko-bug <bug description>'
 ```
 
 **Claude Code**
 
 ```bash
-mkdir -p ~/.claude/skills && (git clone https://github.com/kaluli123123/ko-skill.git ~/.local/share/ko-skill 2>/dev/null || git -C ~/.local/share/ko-skill pull -q) && ln -sfn ~/.local/share/ko-skill/skills/ko-bug ~/.claude/skills/ko-bug && echo 'ko-bug installed — try: /ko-bug <bug description>'
+mkdir -p ~/.claude/skills && rm -rf ~/.claude/skills/ko-bug && curl -fsSL https://github.com/kaluli123123/ko-skill/archive/refs/heads/main.tar.gz | tar -xz -C ~/.claude/skills --strip-components=2 ko-skill-main/skills/ko-bug && echo 'ko-bug installed — try: /ko-bug <bug description>'
 ```
 
 バグの説明は英語・中国語・日本語のいずれでも構いません。
