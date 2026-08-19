@@ -10,6 +10,25 @@
 
 ## 安装
 
+### 让 AI 助手帮你装
+
+把下面这段贴进 Claude Code、Codex CLI，或任何能跑 shell 命令的 coding agent：
+
+```text
+从 https://github.com/kaluli123123/ko-skill 安装 "ko-bug" 这个 Agent Skill：
+1. 在 ~/.local/share/ko-skill 克隆或更新这个仓库（不存在就 git clone 这个 URL 到该路径；
+   已存在就执行 `git -C ~/.local/share/ko-skill pull`）。
+2. 判断你自己是 Codex CLI 还是 Claude Code（或者两者都是），然后把该仓库里的
+   skills/ko-bug 软链到对应的技能目录——目标目录的父目录不存在就先建好：
+   - Codex CLI：~/.agents/skills/ko-bug
+   - Claude Code：~/.claude/skills/ko-bug
+   分不清是哪一个就两个软链都建。
+3. 核实软链能正确解析，且能通过它读到 skills/ko-bug/SKILL.md。
+4. 告诉我安装到了哪些路径，以及怎么调用它（Codex 里用 $ko-bug，Claude Code 里用 /ko-bug）。
+```
+
+### 手动安装
+
 把 `skills/<name>` 放到（或软链到）对应的技能目录：
 
 ```bash

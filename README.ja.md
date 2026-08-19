@@ -10,6 +10,29 @@ Codex CLI（`$name` で呼び出し）と Claude Code（`/name` で呼び出し�
 
 ## インストール
 
+### AI アシスタントにインストールしてもらう
+
+以下を Claude Code、Codex CLI、またはシェルを実行できる任意のコーディングエージェントに貼り付けてください：
+
+```text
+https://github.com/kaluli123123/ko-skill から "ko-bug" という Agent Skill を
+インストールしてください：
+1. ~/.local/share/ko-skill にリポジトリをクローンまたは更新する（存在しなければ
+   そのパスに git clone、存在すれば `git -C ~/.local/share/ko-skill pull`）。
+2. 自分が Codex CLI か Claude Code か（あるいは両方か）を判断し、そのリポジトリの
+   skills/ko-bug を対応する Skill ディレクトリにシンボリックリンクする——親ディレ
+   クトリが無ければ先に作成する：
+   - Codex CLI：~/.agents/skills/ko-bug
+   - Claude Code：~/.claude/skills/ko-bug
+   どちらか判断できない場合は両方にシンボリックリンクを作る。
+3. シンボリックリンクが正しく解決され、それ経由で skills/ko-bug/SKILL.md が読める
+   ことを確認する。
+4. インストール先のパスと、呼び出し方（Codex では $ko-bug、Claude Code では
+   /ko-bug）を私に伝える。
+```
+
+### 手動インストール
+
 `skills/<name>` を対応する Skill ディレクトリに置く（またはシンボリックリンクする）：
 
 ```bash

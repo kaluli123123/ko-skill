@@ -10,6 +10,27 @@ A set of standalone Agent Skills, usable from both Codex CLI (invoke with `$name
 
 ## Install
 
+### Ask an AI assistant to install it
+
+Paste this into Claude Code, Codex CLI, or any coding agent with shell access:
+
+```text
+Install the "ko-bug" Agent Skill from https://github.com/kaluli123123/ko-skill:
+1. Clone or update the repo at ~/.local/share/ko-skill (git clone the URL there if
+   it doesn't exist yet, otherwise `git -C ~/.local/share/ko-skill pull`).
+2. Work out whether you're running as Codex CLI or Claude Code (or both), then
+   symlink skills/ko-bug from that repo into the matching skills directory,
+   creating the parent directory first if needed:
+   - Codex CLI: ~/.agents/skills/ko-bug
+   - Claude Code: ~/.claude/skills/ko-bug
+   If you can't tell which one you are, create both symlinks.
+3. Verify the symlink resolves and skills/ko-bug/SKILL.md is readable through it.
+4. Tell me the install path(s) and how to invoke it ($ko-bug in Codex, /ko-bug in
+   Claude Code).
+```
+
+### Manual install
+
 Drop (or symlink) `skills/<name>` into the matching skills directory:
 
 ```bash
