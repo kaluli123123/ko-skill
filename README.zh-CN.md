@@ -2,7 +2,7 @@
 
 🌐 [English](README.md) | **中文** | [日本語](README.ja.md)
 
-一组独立的 Agent Skill——纯文本的指令文件，任何 AI 都能用，不绑定某一家产品。
+一组独立的 Agent Skill——纯文本的指令文件，任何 AI 都能用，不绑定某一家产品。这里的 skill 都遵循开放的 [Agent Skills 规范](https://agentskills.io)。
 
 | Skill | 用途 |
 |-------|------|
@@ -10,45 +10,23 @@
 
 ## 安装
 
+### 推荐：`skills` CLI
+
+本仓可以被社区维护的 [`skills` CLI](https://github.com/vercel-labs/skills) 直接发现——一条命令，覆盖 77+ 种 AI coding agent（Claude Code、Codex、Cursor、Windsurf、Gemini CLI、GitHub Copilot 等），会自动检测你机器上装了哪些：
+
+```bash
+npx skills add kaluli123123/ko-skill@ko-bug
+```
+
+加 `-g` 装成全局（对所有项目生效，而不只是当前这个），加 `-y` 跳过确认，或用 `-a <agent>`（比如 `-a claude-code -a codex`）指定具体装到哪几个 agent，而不是自动检测。完整选项跑 `npx skills --help`，每个支持的 agent 及其安装路径见 [`skills` CLI 的 README](https://github.com/vercel-labs/skills)。
+
 ### 任何 AI 都能用——不需要"技能"功能
 
-每个 skill 就是一个 `SKILL.md` 文件：纯文本指令。任何能读文字的 AI 助手都能照着执行，不管它有没有正式的技能加载机制——把下面这段贴进对话、system prompt，或自定义指令栏就行：
+每个 skill 就是一个 `SKILL.md` 文件：纯文本指令。任何能读文字的 AI 助手都能照着执行，不管有没有 `skills` CLI——把下面这段贴进对话、system prompt，或自定义指令栏就行：
 
 ```text
 Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-bug/SKILL.md
 and follow it for the rest of this conversation.
-```
-
-### 如果你的 AI 有原生技能目录，让它自己装
-
-不少 coding agent 会自动加载某个专属目录下的 `SKILL.md`。如果你用的就是这种，把下面这段贴给它（它有 shell 权限，能自己弄清楚该装到哪，不用你替它查）：
-
-```text
-从 https://github.com/kaluli123123/ko-skill 安装 "ko-bug" 这个 Agent Skill，装到你自己
-的技能目录——不要另建一个 clone 文件夹：
-1. 判断你自己这个工具的用户级技能目录在哪（查你自己的文档或配置，找 SKILL.md 的加载
-   规则，比如 $CODEX_HOME、$CLAUDE_CONFIG_DIR 这类环境变量，或者配置目录下的固定路径）。
-2. 下载该仓库的 tarball，只把里面的 skills/ko-bug 解压到该目录下的 skills/ko-bug——
-   目录不存在就先建好，已存在就替换掉旧内容。
-3. 核实 skills/ko-bug/SKILL.md 能在该路径下读到（是一个真实目录，没有嵌在别的文件夹
-   里）。
-4. 告诉我安装到了哪个路径，以及怎么调用这个 skill（用你这个工具自己的调用方式）。
-```
-
-### 已验证的例子
-
-下面两个是实测确认过的——用得上就直接抄，但不代表只支持这两个。每条命令都是自包含的，会按工具自己的解析方式（`$CODEX_HOME` / `$CLAUDE_CONFIG_DIR`，只有没设置时才退回 `~/.codex` / `~/.claude`）找到真正的技能目录，不留额外的 clone 文件夹，可以重复执行。
-
-**Codex CLI**
-
-```bash
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills" && rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/ko-bug" && curl -fsSL https://github.com/kaluli123123/ko-skill/archive/refs/heads/main.tar.gz | tar -xz -C "${CODEX_HOME:-$HOME/.codex}/skills" --strip-components=2 ko-skill-main/skills/ko-bug && echo "ko-bug installed at ${CODEX_HOME:-$HOME/.codex}/skills/ko-bug — try: \$ko-bug <bug description>"
-```
-
-**Claude Code**
-
-```bash
-mkdir -p "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" && rm -rf "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ko-bug" && curl -fsSL https://github.com/kaluli123123/ko-skill/archive/refs/heads/main.tar.gz | tar -xz -C "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" --strip-components=2 ko-skill-main/skills/ko-bug && echo "ko-bug installed at ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/ko-bug — try: /ko-bug <bug description>"
 ```
 
 用英文、中文或日文描述 bug 都可以，装到哪个 AI 上都一样。
@@ -87,3 +65,5 @@ skills/
       cases/*.yaml
       fixtures/scripts/   # script judge
 ```
+
+`skills/<name>/SKILL.md` 这个目录结构，正好就是 `skills` CLI（以及 Codex、Claude Code 和大多数其它 agent）自动发现技能的约定——不需要额外写一份 manifest。
