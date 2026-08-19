@@ -1,0 +1,64 @@
+# ko-skill
+
+🌐 [English](README.md) | **中文** | [日本語](README.ja.md)
+
+一组独立的 Agent Skill，同时适用于 Codex CLI（用 `$name` 调用）和 Claude Code（用 `/name` 调用）。
+
+| Skill | 用途 |
+|-------|------|
+| [`ko-bug`](skills/ko-bug/SKILL.md) | 证据优先的 Bug 诊断与修复协议：反馈循环 → 复现与最小化 → 可证伪假设 → 定向插桩 → 影响面/历史核查 → 分析确认门 → RED/GREEN → 验证交付 |
+
+## 支持的语言
+
+`ko-bug` 面向国际用户设计，而不是只面向中文用户。`SKILL.md` 用英文撰写（作为基座文档），并带有明确的 **Language Policy（语言策略）**：它会检测用户当前消息使用的语言——英文、中文、日文（目前支持的三种语言）——并用同一种语言作答（报告、假设列表、确认门、HITL 步骤表等）；遇到其它语言或无法判断语言时默认使用英文。技术标识符（路径、命令、代码、日志/错误原文、协议字段）永远不会被翻译。
+
+本 README 本身也提供这三种语言的版本——见上方的语言切换链接。
+
+## 安装
+
+把 `skills/<name>` 放到（或软链到）对应的技能目录：
+
+```bash
+git clone https://github.com/kaluli123123/ko-skill.git
+# Codex CLI
+ln -s "$PWD/ko-skill/skills/ko-bug" ~/.agents/skills/ko-bug
+# Claude Code
+ln -s "$PWD/ko-skill/skills/ko-bug" ~/.claude/skills/ko-bug
+```
+
+使用方式：在 Codex 里输入 `$ko-bug <bug 描述>`，或在 Claude Code 里输入 `/ko-bug <bug 描述>`——用英文、中文或日文描述都可以。
+
+## 评测（skill-up）
+
+每个 skill 自带 `evals/`，用 [skill-up](https://alibaba.github.io/skill-up/) 运行：
+
+```bash
+skill-up validate skills/ko-bug/evals/eval.yaml
+skill-up run      skills/ko-bug/evals/eval.yaml              # 默认 claude_code 引擎，需要 ANTHROPIC_API_KEY
+skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
+```
+
+`ko-bug` 的三个用例分别锁住一处核心行为，并且各自使用一种被支持的语言：
+
+| 用例 | 语言 | 锁住什么 |
+|------|------|----------|
+| `has-failing-test` | 英文 | 已有 failing test 时复用为反馈循环；分析确认门前生产代码保持不变 |
+| `no-seam-hitl` | 日文（日本語） | 无测试 seam 的真机偶发 Bug 走结构化 HITL 循环，不编造证据、不擅自终止 |
+| `should-not-trigger-feature` | 中文 | 纯新功能请求不触发 Bug 修复协议 |
+
+每个用例的 judge 还会校验响应语言是否匹配预期（script 级别的正则，或 `agent_judge` 判据），所以这套用例同时也是上面 Language Policy 的回归检查。
+
+运行产物落在 `skills/ko-bug-workspace/`（skill-up 会把它放在被测 Skill 的同级目录，已加入 `.gitignore`）。
+
+## 目录结构
+
+```
+skills/
+  ko-bug/
+    SKILL.md              # 技能正文
+    agents/openai.yaml    # Codex 界面元数据
+    evals/
+      eval.yaml
+      cases/*.yaml
+      fixtures/scripts/   # script judge
+```

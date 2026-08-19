@@ -1,0 +1,64 @@
+# ko-skill
+
+🌐 [English](README.md) | [中文](README.zh-CN.md) | **日本語**
+
+Codex CLI（`$name` で呼び出し）と Claude Code（`/name` で呼び出し）の両方で使える、独立した Agent Skill 集です。
+
+| Skill | 用途 |
+|-------|------|
+| [`ko-bug`](skills/ko-bug/SKILL.md) | 証拠優先のバグ診断・修正プロトコル：フィードバックループ → 再現と最小化 → 反証可能な仮説 → ターゲットを絞った計測 → 影響範囲・過去事例の確認 → 分析確認ゲート → RED/GREEN → 検証済みの成果物 |
+
+## 対応言語
+
+`ko-bug` は中国語話者だけでなく、国際的なユーザー向けに作られています。`SKILL.md` は英語で書かれており（基準となるドキュメント）、明示的な **Language Policy（言語ポリシー）** を備えています。ユーザーの直近のメッセージの言語——英語・中国語（中文）・日本語（現在サポートしている 3 言語）——を検出し、レポートや仮説リスト、確認ゲート、HITL の手順表などを同じ言語で返します。それ以外の言語の場合や言語を判定できない場合は英語をデフォルトとします。ファイルパス、コマンド、コード、ログ/エラーの原文、プロトコルのフィールド名などの技術的な識別子は、いかなる場合も翻訳されません。
+
+この README 自体も同じ 3 言語で用意されています——上部の言語切り替えリンクを参照してください。
+
+## インストール
+
+`skills/<name>` を対応する Skill ディレクトリに置く（またはシンボリックリンクする）：
+
+```bash
+git clone https://github.com/kaluli123123/ko-skill.git
+# Codex CLI
+ln -s "$PWD/ko-skill/skills/ko-bug" ~/.agents/skills/ko-bug
+# Claude Code
+ln -s "$PWD/ko-skill/skills/ko-bug" ~/.claude/skills/ko-bug
+```
+
+使い方：Codex では `$ko-bug <バグの説明>`、Claude Code では `/ko-bug <バグの説明>` と入力します——説明は英語・中国語・日本語のいずれでも構いません。
+
+## 評価（skill-up）
+
+各 Skill はそれぞれ独自の `evals/` を同梱しており、[skill-up](https://alibaba.github.io/skill-up/) で実行します：
+
+```bash
+skill-up validate skills/ko-bug/evals/eval.yaml
+skill-up run      skills/ko-bug/evals/eval.yaml              # デフォルトは claude_code エンジン、ANTHROPIC_API_KEY が必要
+skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
+```
+
+`ko-bug` の 3 つのケースはそれぞれ核となる挙動を 1 つずつ固定しており、対応言語も 1 つずつ異なります：
+
+| ケース | 言語 | 固定している挙動 |
+|--------|------|-------------------|
+| `has-failing-test` | 英語 | 既存の failing test をフィードバックループとして再利用する。分析確認ゲートより前は本番コードを変更しない |
+| `no-seam-hitl` | 日本語 | テスト seam のない実機の偶発的なバグでは、構造化された HITL ループに切り替える。証拠を捏造したり、独断で打ち切ったりしない |
+| `should-not-trigger-feature` | 中国語（中文） | 純粋な機能追加リクエストではバグ修正プロトコルを発動しない |
+
+各ケースの judge はレスポンスの言語が期待どおりかも検証します（スクリプトレベルの正規表現、または `agent_judge` の判定基準）。そのため、このテストスイート自体が上記 Language Policy のリグレッションチェックも兼ねています。
+
+実行時の成果物は `skills/ko-bug-workspace/` 配下に生成されます（skill-up がテスト対象 Skill と同じ階層に置きます。すでに `.gitignore` 済みです）。
+
+## ディレクトリ構成
+
+```
+skills/
+  ko-bug/
+    SKILL.md              # Skill 本体
+    agents/openai.yaml    # Codex 用インターフェースメタデータ
+    evals/
+      eval.yaml
+      cases/*.yaml
+      fixtures/scripts/   # script judge
+```

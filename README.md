@@ -1,5 +1,7 @@
 # ko-skill
 
+🌐 **English** | [中文](README.zh-CN.md) | [日本語](README.ja.md)
+
 A set of standalone Agent Skills, usable from both Codex CLI (invoke with `$name`) and Claude Code (invoke with `/name`).
 
 | Skill | Purpose |
@@ -9,6 +11,8 @@ A set of standalone Agent Skills, usable from both Codex CLI (invoke with `$name
 ## Supported languages
 
 `ko-bug` is built for an international audience, not a Chinese-only one. `SKILL.md` is authored in English and carries an explicit **Language Policy**: it detects the language of the user's current message — English, Chinese (中文), or Japanese (日本語), the three languages currently supported — and answers in kind (reports, hypothesis lists, the confirmation gate, HITL step tables, etc.), defaulting to English for any other language or when detection fails. Technical identifiers (paths, commands, code, log/error text, protocol fields) are never translated.
+
+This README itself is available in the same three languages — see the language switcher above.
 
 ## Install
 
