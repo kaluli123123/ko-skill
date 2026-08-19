@@ -1,0 +1,5 @@
+# skill-up 运行产物
+**/*-workspace/
+# 本地 skill-up 配置（可能含私有网关地址）
+.skill-up.yaml
+.DS_Store

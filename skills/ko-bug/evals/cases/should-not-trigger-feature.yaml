@@ -1,0 +1,52 @@
+id: should-not-trigger-feature
+title: 纯新功能请求不应触发 ko-bug 协议
+description: |
+  锁定审核修复 1（description 的“不用于新功能”边界）：请求里没有任何故障症状，
+  代理应直接实现功能，不得套用反馈循环 / 假设列表 / 分析确认门等 Bug 协议。
+
+input:
+  prompt: |
+    给 todo.py 加一个 `--json` 参数：`python3 todo.py list --json` 时把待办列表以 JSON 数组输出，
+    默认仍保持现在的纯文本输出。
+
+context:
+  files:
+    "todo.py": |
+      import sys
+
+      TODOS = ["买牛奶", "写周报", "预约牙医"]
+
+
+      def main(argv):
+          if not argv or argv[0] != "list":
+              print("用法: todo.py list")
+              return 2
+          for i, item in enumerate(TODOS, 1):
+              print(f"{i}. {item}")
+          return 0
+
+
+      if __name__ == "__main__":
+          sys.exit(main(sys.argv[1:]))
+
+constraints:
+  timeout_seconds: 300
+  max_turns: 15
+
+expect:
+  must_not_contain:                  # Bug 协议的标志性用语一个都不该出现
+    - "反馈循环"
+    - "分析确认门"
+    - "可证伪"
+    - "最小复现"
+  file_contains:
+    - path: "todo.py"
+      content: "--json"
+
+judge:
+  type: rule_based
+  success:
+    - files_exist:
+        - "todo.py"
+    - output_contains:
+        not: ["阶段 2", "RED", "GREEN", "根因"]

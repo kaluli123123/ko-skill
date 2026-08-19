@@ -1,0 +1,32 @@
+schema_version: v1alpha1
+
+# ko-bug 评测套件（skill-up）
+# 运行：skill-up validate skills/ko-bug/evals/eval.yaml
+#       skill-up run      skills/ko-bug/evals/eval.yaml            # 默认 claude_code 引擎
+#       skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
+
+environment:
+  type: none                      # 用例只依赖本机 python3 与 git，不需要远程沙箱
+
+skills:
+  - source: local_path
+    path: .                       # 被测 Skill 根目录（含 SKILL.md）
+
+engine:
+  name: claude_code               # claude_code | codex；可用 --engine 覆盖
+  # model 省略，使用引擎默认模型
+
+cases:
+  files:
+    - evals/cases/has-failing-test.yaml
+    - evals/cases/no-seam-hitl.yaml
+    - evals/cases/should-not-trigger-feature.yaml
+  defaults:
+    timeout_seconds: 900
+    max_turns: 30
+    expect:
+      must_not_contain:
+        - "I cannot"
+
+report:
+  formats: [json]
