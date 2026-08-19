@@ -29,17 +29,21 @@
 
 ### 手动安装
 
-把 `skills/<name>` 放到（或软链到）对应的技能目录：
+下面每条命令都是自包含的：直接跑这一条即可，不需要单独的 clone 步骤。它会把仓库克隆（或更新）到 `~/.local/share/ko-skill`，再把 `skills/ko-bug` 软链过去；可以重复执行。
+
+**Codex CLI**
 
 ```bash
-git clone https://github.com/kaluli123123/ko-skill.git
-# Codex CLI
-ln -s "$PWD/ko-skill/skills/ko-bug" ~/.agents/skills/ko-bug
-# Claude Code
-ln -s "$PWD/ko-skill/skills/ko-bug" ~/.claude/skills/ko-bug
+mkdir -p ~/.agents/skills && (git clone https://github.com/kaluli123123/ko-skill.git ~/.local/share/ko-skill 2>/dev/null || git -C ~/.local/share/ko-skill pull -q) && ln -sfn ~/.local/share/ko-skill/skills/ko-bug ~/.agents/skills/ko-bug && echo 'ko-bug installed — try: $ko-bug <bug description>'
 ```
 
-使用方式：在 Codex 里输入 `$ko-bug <bug 描述>`，或在 Claude Code 里输入 `/ko-bug <bug 描述>`——用英文、中文或日文描述都可以。
+**Claude Code**
+
+```bash
+mkdir -p ~/.claude/skills && (git clone https://github.com/kaluli123123/ko-skill.git ~/.local/share/ko-skill 2>/dev/null || git -C ~/.local/share/ko-skill pull -q) && ln -sfn ~/.local/share/ko-skill/skills/ko-bug ~/.claude/skills/ko-bug && echo 'ko-bug installed — try: /ko-bug <bug description>'
+```
+
+用英文、中文或日文描述 bug 都可以。
 
 ## 评测（skill-up）
 

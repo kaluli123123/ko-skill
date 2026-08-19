@@ -33,17 +33,21 @@ https://github.com/kaluli123123/ko-skill から "ko-bug" という Agent Skill �
 
 ### 手動インストール
 
-`skills/<name>` を対応する Skill ディレクトリに置く（またはシンボリックリンクする）：
+以下のコマンドはそれぞれ単体で完結しています。個別に clone する手順は不要で、これ 1 行を実行するだけです。`~/.local/share/ko-skill` にリポジトリをクローン（または更新）し、`skills/ko-bug` をシンボリックリンクします。何度実行しても安全です。
+
+**Codex CLI**
 
 ```bash
-git clone https://github.com/kaluli123123/ko-skill.git
-# Codex CLI
-ln -s "$PWD/ko-skill/skills/ko-bug" ~/.agents/skills/ko-bug
-# Claude Code
-ln -s "$PWD/ko-skill/skills/ko-bug" ~/.claude/skills/ko-bug
+mkdir -p ~/.agents/skills && (git clone https://github.com/kaluli123123/ko-skill.git ~/.local/share/ko-skill 2>/dev/null || git -C ~/.local/share/ko-skill pull -q) && ln -sfn ~/.local/share/ko-skill/skills/ko-bug ~/.agents/skills/ko-bug && echo 'ko-bug installed — try: $ko-bug <bug description>'
 ```
 
-使い方：Codex では `$ko-bug <バグの説明>`、Claude Code では `/ko-bug <バグの説明>` と入力します——説明は英語・中国語・日本語のいずれでも構いません。
+**Claude Code**
+
+```bash
+mkdir -p ~/.claude/skills && (git clone https://github.com/kaluli123123/ko-skill.git ~/.local/share/ko-skill 2>/dev/null || git -C ~/.local/share/ko-skill pull -q) && ln -sfn ~/.local/share/ko-skill/skills/ko-bug ~/.claude/skills/ko-bug && echo 'ko-bug installed — try: /ko-bug <bug description>'
+```
+
+バグの説明は英語・中国語・日本語のいずれでも構いません。
 
 ## 評価（skill-up）
 

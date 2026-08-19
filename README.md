@@ -31,17 +31,21 @@ Install the "ko-bug" Agent Skill from https://github.com/kaluli123123/ko-skill:
 
 ### Manual install
 
-Drop (or symlink) `skills/<name>` into the matching skills directory:
+Each command below is self-contained: run it as-is, no separate clone step. It clones (or updates) the repo into `~/.local/share/ko-skill` and symlinks `skills/ko-bug` into place; safe to rerun.
+
+**Codex CLI**
 
 ```bash
-git clone https://github.com/kaluli123123/ko-skill.git
-# Codex CLI
-ln -s "$PWD/ko-skill/skills/ko-bug" ~/.agents/skills/ko-bug
-# Claude Code
-ln -s "$PWD/ko-skill/skills/ko-bug" ~/.claude/skills/ko-bug
+mkdir -p ~/.agents/skills && (git clone https://github.com/kaluli123123/ko-skill.git ~/.local/share/ko-skill 2>/dev/null || git -C ~/.local/share/ko-skill pull -q) && ln -sfn ~/.local/share/ko-skill/skills/ko-bug ~/.agents/skills/ko-bug && echo 'ko-bug installed — try: $ko-bug <bug description>'
 ```
 
-Use it: type `$ko-bug <bug description>` in Codex, or `/ko-bug <bug description>` in Claude Code — in English, Chinese, or Japanese.
+**Claude Code**
+
+```bash
+mkdir -p ~/.claude/skills && (git clone https://github.com/kaluli123123/ko-skill.git ~/.local/share/ko-skill 2>/dev/null || git -C ~/.local/share/ko-skill pull -q) && ln -sfn ~/.local/share/ko-skill/skills/ko-bug ~/.claude/skills/ko-bug && echo 'ko-bug installed — try: /ko-bug <bug description>'
+```
+
+Works with a bug description in English, Chinese, or Japanese.
 
 ## Evals (skill-up)
 
