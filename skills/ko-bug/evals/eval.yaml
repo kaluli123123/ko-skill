@@ -1,20 +1,20 @@
 schema_version: v1alpha1
 
-# ko-bug 评测套件（skill-up）
-# 运行：skill-up validate skills/ko-bug/evals/eval.yaml
-#       skill-up run      skills/ko-bug/evals/eval.yaml            # 默认 claude_code 引擎
-#       skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
+# ko-bug eval suite (skill-up)
+# Run: skill-up validate skills/ko-bug/evals/eval.yaml
+#      skill-up run      skills/ko-bug/evals/eval.yaml            # default claude_code engine
+#      skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
 
 environment:
-  type: none                      # 用例只依赖本机 python3 与 git，不需要远程沙箱
+  type: none                      # cases only need local python3 and git; no remote sandbox required
 
 skills:
   - source: local_path
-    path: .                       # 被测 Skill 根目录（含 SKILL.md）
+    path: .                       # root of the skill under test (contains SKILL.md)
 
 engine:
-  name: claude_code               # claude_code | codex；可用 --engine 覆盖
-  # model 省略，使用引擎默认模型
+  name: claude_code               # claude_code | codex; override with --engine
+  # model omitted, uses the engine's default model
 
 cases:
   files:

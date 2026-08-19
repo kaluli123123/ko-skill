@@ -1,4 +1,4 @@
 interface:
   display_name: "Evidence-first Bugfix"
-  short_description: "按证据、TDD 和回归闭环修复 Bug"
-  default_prompt: "使用 $ko-bug 按证据拆解并修复这个 Bug："
+  short_description: "Diagnose and fix bugs from evidence, with TDD and a regression closeout"
+  default_prompt: "Use $ko-bug to diagnose and fix this bug, evidence-first: "

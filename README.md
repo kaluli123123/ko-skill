@@ -1,14 +1,18 @@
 # ko-skill
 
-一组独立的 Agent Skill，同时适用于 Codex CLI（`$name` 调用）与 Claude Code（`/name` 调用）。
+A set of standalone Agent Skills, usable from both Codex CLI (invoke with `$name`) and Claude Code (invoke with `/name`).
 
-| Skill | 用途 |
-|-------|------|
-| [`ko-bug`](skills/ko-bug/SKILL.md) | 证据优先的 Bug 诊断与修复协议：反馈循环 → 复现与最小化 → 可证伪假设 → 定向插桩 → 影响面/历史核查 → 分析确认门 → RED/GREEN → 验证交付 |
+| Skill | Purpose |
+|-------|---------|
+| [`ko-bug`](skills/ko-bug/SKILL.md) | Evidence-first bug diagnosis and fix protocol: feedback loop → reproduce & minimize → falsifiable hypotheses → targeted instrumentation → impact/historical check → analysis confirmation gate → RED/GREEN → verified delivery |
 
-## 安装
+## Supported languages
 
-把 `skills/<name>` 放到（或软链到）对应的技能目录：
+`ko-bug` is built for an international audience, not a Chinese-only one. `SKILL.md` is authored in English and carries an explicit **Language Policy**: it detects the language of the user's current message — English, Chinese (中文), or Japanese (日本語), the three languages currently supported — and answers in kind (reports, hypothesis lists, the confirmation gate, HITL step tables, etc.), defaulting to English for any other language or when detection fails. Technical identifiers (paths, commands, code, log/error text, protocol fields) are never translated.
+
+## Install
+
+Drop (or symlink) `skills/<name>` into the matching skills directory:
 
 ```bash
 git clone https://github.com/kaluli123123/ko-skill.git
@@ -18,35 +22,37 @@ ln -s "$PWD/ko-skill/skills/ko-bug" ~/.agents/skills/ko-bug
 ln -s "$PWD/ko-skill/skills/ko-bug" ~/.claude/skills/ko-bug
 ```
 
-使用：Codex 里输入 `$ko-bug <bug 描述>`；Claude Code 里输入 `/ko-bug <bug 描述>`。
+Use it: type `$ko-bug <bug description>` in Codex, or `/ko-bug <bug description>` in Claude Code — in English, Chinese, or Japanese.
 
-## 评测（skill-up）
+## Evals (skill-up)
 
-每个 skill 自带 `evals/`，用 [skill-up](https://alibaba.github.io/skill-up/) 运行：
+Each skill ships its own `evals/`, run with [skill-up](https://alibaba.github.io/skill-up/):
 
 ```bash
 skill-up validate skills/ko-bug/evals/eval.yaml
-skill-up run      skills/ko-bug/evals/eval.yaml              # 默认 claude_code 引擎，需 ANTHROPIC_API_KEY
+skill-up run      skills/ko-bug/evals/eval.yaml              # default claude_code engine, needs ANTHROPIC_API_KEY
 skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
 ```
 
-`ko-bug` 的三个用例分别锁住三处核心行为：
+`ko-bug`'s three cases each lock down one core behavior, one in each supported language:
 
-| 用例 | 锁住什么 |
-|------|----------|
-| `has-failing-test` | 已有 failing test 时复用为反馈循环；分析确认门前不改生产代码 |
-| `no-seam-hitl` | 无测试 seam 的真机偶发 Bug 走结构化 HITL，不编造证据、不擅自终止 |
-| `should-not-trigger-feature` | 纯新功能请求不触发 Bug 协议 |
+| Case | Language | Locks down |
+|------|----------|-------------|
+| `has-failing-test` | English | Reuses an existing failing test as the feedback loop; production code stays untouched before the analysis confirmation gate |
+| `no-seam-hitl` | Japanese (日本語) | A real-device flaky bug with no test seam runs a structured HITL loop, without fabricating evidence or bailing out unilaterally |
+| `should-not-trigger-feature` | Chinese (中文) | A plain feature request does not trigger the bugfix protocol |
 
-运行产物在 `skills/ko-bug-workspace/`（skill-up 放在被测 Skill 的同级目录，已 gitignore）。
+Each case's judge also asserts the response matches the expected language (script-level regex or an `agent_judge` criterion), so the suite doubles as a regression check for the Language Policy above.
 
-## 目录结构
+Run artifacts land in `skills/ko-bug-workspace/` (skill-up places them next to the skill under test; already gitignored).
+
+## Layout
 
 ```
 skills/
   ko-bug/
-    SKILL.md              # 技能正文
-    agents/openai.yaml    # Codex 界面元数据
+    SKILL.md              # skill body
+    agents/openai.yaml    # Codex interface metadata
     evals/
       eval.yaml
       cases/*.yaml

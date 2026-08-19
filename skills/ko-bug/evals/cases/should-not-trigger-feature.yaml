@@ -1,13 +1,18 @@
 id: should-not-trigger-feature
-title: 纯新功能请求不应触发 ko-bug 协议
+title: "A plain feature request should not trigger the ko-bug protocol"
 description: |
-  锁定审核修复 1（description 的“不用于新功能”边界）：请求里没有任何故障症状，
-  代理应直接实现功能，不得套用反馈循环 / 假设列表 / 分析确认门等 Bug 协议。
+  Locks in fix 1 from the audit (the "not for new features" boundary in the frontmatter
+  description): the request carries no failure symptom at all, so the agent should implement
+  the feature directly and must not layer on bugfix-protocol scaffolding (feedback loop /
+  hypothesis list / analysis confirmation gate).
+  Uses a Chinese-language request to exercise the Language Policy: the response is expected
+  to come back in Chinese, not switch to English.
 
 input:
   prompt: |
-    给 todo.py 加一个 `--json` 参数：`python3 todo.py list --json` 时把待办列表以 JSON 数组输出，
-    默认仍保持现在的纯文本输出。
+    给 todo.py 加一个 `--json` 参数：`python3 todo.py list --json` 时，把待办列表输出成一个
+    JSON 字符串数组（数组元素就是待办事项文本本身，不要包成对象），例如
+    `["买牛奶", "写周报"]`；默认（不带 `--json`）仍保持现在的纯文本输出。
 
 context:
   files:
@@ -34,7 +39,7 @@ constraints:
   max_turns: 15
 
 expect:
-  must_not_contain:                  # Bug 协议的标志性用语一个都不该出现
+  must_not_contain:                  # none of the bugfix-protocol's signature terms should appear
     - "反馈循环"
     - "分析确认门"
     - "可证伪"
@@ -50,3 +55,6 @@ judge:
         - "todo.py"
     - output_contains:
         not: ["阶段 2", "RED", "GREEN", "根因"]
+    - output_matches:                # response should be Chinese script, not Japanese kana
+        all: ["\\p{Han}"]
+        not: ["\\p{Hiragana}", "\\p{Katakana}"]

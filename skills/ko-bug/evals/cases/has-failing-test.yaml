@@ -1,13 +1,16 @@
 id: has-failing-test
-title: 已有 failing test 时复用为反馈循环，并在分析确认门前停下、不改生产代码
+title: Reuses an existing failing test as the feedback loop, and stops at the confirmation gate without touching production code
 description: |
-  锁定审核修复 2 与 3：阶段 2 直接把现成 failing test 当反馈循环，阶段 6 复用而不是重建；
-  分析确认门只发一次且必须等用户确认——单轮对话里没有用户确认，生产文件必须保持原样。
+  Locks in fixes 2 and 3 from the audit: Stage 2 treats an existing failing test as the
+  feedback loop directly, and Stage 6 reuses it instead of rebuilding one; the analysis
+  confirmation gate is sent once and must wait for the user — in a single-turn conversation
+  there is no user confirmation yet, so production files must stay untouched.
+  Uses an English-language bug report to exercise the default branch of the Language Policy.
 
 input:
   prompt: |
-    使用 $ko-bug：`python3 -m unittest test_slugify -v` 里 `test_trailing_hyphen` 失败了，
-    帮我按流程处理。
+    Use $ko-bug: `python3 -m unittest test_slugify -v` — the `test_trailing_hyphen` test is
+    failing. Please handle it following the protocol.
 
 context:
   files:
@@ -16,7 +19,8 @@ context:
 
 
       def slugify(text: str) -> str:
-          """标题转 URL slug：小写、非字母数字合并成连字符、去掉首尾连字符。"""
+          """Turn a title into a URL slug: lowercase, collapse runs of non-alphanumeric
+          characters into a single hyphen, and strip leading/trailing hyphens."""
           slug = re.sub(r"[^a-z0-9]+", "-", text.lower())
           return slug.lstrip("-")
     "test_slugify.py": |
@@ -43,11 +47,7 @@ constraints:
   timeout_seconds: 900
   max_turns: 30
 
-expect:                              # 零成本门槛：报告里必须有假设列表（其余交给 judge 脚本）
-  must_contain:
-    - "假设"
-
 judge:
-  type: script                       # 精确判定：生产文件未被改动 + 报告停在确认门
+  type: script                       # precise check: production file untouched + report stops at the gate + English response
   script_path: evals/fixtures/scripts/check-gate.sh
   timeout_seconds: 30

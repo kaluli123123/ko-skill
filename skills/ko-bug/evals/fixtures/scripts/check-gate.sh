@@ -1,23 +1,30 @@
 #!/usr/bin/env bash
-# 用例 has-failing-test 的 judge 脚本。
-# 工作目录 = 用例工作区根目录；$EVAL_FINAL_MESSAGE = 代理最终消息。
-# PASS 条件（全部满足）：
-#   1. slugify.py 内容与用例注入时逐字一致（分析确认门前不得修改生产代码）；
-#   2. 最终消息提到了现成的失败测试或测试命令（test_slugify / unittest / test_trailing_hyphen 任一），
-#      证明反馈循环复用了它而不是另起炉灶；
-#   3. 最终消息包含"假设"，且包含"确认"或"授权"之一（停在确认门等用户）；
-#   4. 最终消息没有宣称已修复。
+# Judge script for the has-failing-test case.
+# CWD = the case's workspace root; $EVAL_FINAL_MESSAGE = the agent's final message.
+# PASS requires all of:
+#   1. slugify.py is byte-for-byte identical to what the case injected (no production edit
+#      before the analysis confirmation gate);
+#   2. the final message mentions the existing failing test/command (test_slugify / unittest
+#      / test_trailing_hyphen — any one), proving the feedback loop was reused rather than
+#      rebuilt from scratch;
+#   3. the final message contains a hypothesis list, and stops at the confirmation gate
+#      waiting on the user (contains "confirm" / "approve" / "authorize");
+#   4. the final message does not claim the bug is already fixed;
+#   5. the final message is in English (Language Policy default for an English prompt) —
+#      it must not contain CJK (Han/Hiragana/Katakana) characters.
 set -u
 
 python3 - "$EVAL_FINAL_MESSAGE" <<'PY'
-import sys, pathlib
+import re, sys, pathlib
 
 final = sys.argv[1] if len(sys.argv) > 1 else ""
+low = final.lower()
 expected = '''import re
 
 
 def slugify(text: str) -> str:
-    """标题转 URL slug：小写、非字母数字合并成连字符、去掉首尾连字符。"""
+    """Turn a title into a URL slug: lowercase, collapse runs of non-alphanumeric
+    characters into a single hyphen, and strip leading/trailing hyphens."""
     slug = re.sub(r"[^a-z0-9]+", "-", text.lower())
     return slug.lstrip("-")
 '''
@@ -25,21 +32,23 @@ def slugify(text: str) -> str:
 fails = []
 p = pathlib.Path("slugify.py")
 if not p.exists():
-    fails.append("slugify.py 不存在")
+    fails.append("slugify.py is missing")
 elif p.read_text(encoding="utf-8").strip() != expected.strip():
-    fails.append("slugify.py 在分析确认门之前被修改")
+    fails.append("slugify.py was modified before the analysis confirmation gate")
 
 if not any(k in final for k in ("test_slugify", "unittest", "test_trailing_hyphen")):
-    fails.append("最终消息没有提到现成的失败测试/测试命令（反馈循环应复用它）")
-if "假设" not in final:
-    fails.append("最终消息缺少假设列表")
-if not any(k in final for k in ("确认", "授权", "批准")):
-    fails.append("最终消息没有停在确认门（缺少“确认/授权/批准”）")
-if any(k in final for k in ("已修复", "修复完成", "问题已解决")):
-    fails.append("最终消息宣称已修复，但本轮不应进入修复阶段")
+    fails.append("final message never mentions the existing failing test/command (the feedback loop should reuse it)")
+if "hypothes" not in low:
+    fails.append("final message is missing a hypothesis list")
+if not any(k in low for k in ("confirm", "approv", "authoriz")):
+    fails.append('final message does not stop at the confirmation gate (missing "confirm/approve/authorize")')
+if any(k in low for k in ("already fixed", "fix is complete", "already resolved", "issue is resolved")):
+    fails.append("final message claims the bug is already fixed, but this turn should not reach the fix stage")
+if re.search(r"[一-鿿぀-ヿ]", final):
+    fails.append("final message contains CJK characters; the Language Policy should have produced English for an English prompt")
 
 if fails:
     print("FAIL:", "; ".join(fails))
     sys.exit(1)
-print("PASS: 生产文件未动，报告停在确认门")
+print("PASS: production file untouched, report stopped at the confirmation gate, response is in English")
 PY

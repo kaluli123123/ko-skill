@@ -1,185 +1,199 @@
 ---
 name: ko-bug
-description: 证据优先的 Bug 诊断与修复协议。用户输入 $ko-bug，或要求复现、定位根因、修复崩溃、报错、错误结果、回归、偶发（flaky）故障或性能回归时使用。不用于新功能、体验优化或对正常行为的性能优化；架构变更、多组件改造或需要预先批准任务清单的工作不在本 skill 范围内。
+description: Evidence-first bug diagnosis and fix protocol. Use it when the user types $ko-bug, or asks to reproduce, root-cause, or fix a crash, error, wrong result, regression, flaky failure, or performance regression — the same trigger conditions apply whether the request is written in English, Chinese (中文), or Japanese (日本語). Not for new features, UX polish, or performance tuning of behavior that is already correct; architectural changes, multi-component rework, or work that needs a pre-approved task list are out of scope.
 ---
 
 # Evidence-first Bugfix
 
-这个 skill 面向已经存在的错误行为，适用于不同语言、框架、运行时和系统。它不预设测试框架、构建工具、部署方式或客户端类型；先读取仓库规则、`CONTEXT.md`（如有）、相关 ADR 和项目文档，再选择当前项目真实可用的命令。
+This skill targets behavior that is already broken, across any language, framework, runtime, or system. It makes no assumption about the test framework, build tool, deployment shape, or client type in use; read the repo's rules, `CONTEXT.md` (if present), relevant ADRs, and project docs first, then pick commands that are actually real for the current project.
 
-它是一套独立的 Bug 修复协议：用紧反馈循环约束诊断，用最小复现减少变量，用可证伪假设避免锚定，用 RED→GREEN 锁定回归，用端到端证据证明用户症状消失，并用受控权限和归档保证交付可追溯。
+It is a self-contained bugfix protocol: a tight feedback loop constrains diagnosis, minimization removes variables, falsifiable hypotheses prevent anchoring, RED→GREEN locks in the regression, end-to-end evidence proves the user's symptom is gone, and controlled permissions plus an archive keep the delivery traceable.
 
-## 不可违反的规则
+## Language Policy
 
-1. **先建立反馈循环，再形成理论**：必须有一个能够针对用户确切症状变红的快速信号；没有它就不能进入假设或修复阶段。
-2. **先复现，后最小化**：运行完整输出，确认是用户报告的故障，再逐个移除输入、调用方、配置、数据和步骤。
-3. **无证据不下结论**：没有日志、数据、调用链或可复现信号时，只能记录缺口；不得编造表名、字段、路径、ID、URL、API 或环境事实。
-4. **每个假设必须可证伪**：写出预测和最小验证动作；一次只改变一个变量。
-5. **先 RED 后生产修复**：在正确测试 seam（能代表真实调用链的测试入口）上先看到失败，再修改根因，最后看到同一测试通过。没有正确 seam 时，以阶段 2 的原始反馈循环充当 RED/GREEN，并在报告中标注“无正确 seam”。
-6. **修根因，不修表象**：根因必须落到 `file:line`、函数、分支或配置项，并解释其因果链。
-7. **先脱敏再展示**：日志、请求、HAR、trace、core dump、环境输出中的 token、密码、Cookie、用户数据和签名 URL 必须替换为 `<REDACTED>`。
-8. **证据与权限分离**：分析、测试和文件编辑不等于 Git/GitHub 写授权；`worktree add`、`add`、`commit`、`push`、`merge`、`checkout`、`stash` 等都必须获得明确授权。
-9. **两次修复尝试仍失败就停**：停止继续叠加补丁，说明当前假设为何失效，并请求新的环境证据；或停止本 skill，请用户改用带任务清单审批的规划流程。“一次尝试”的计数见阶段 7。
+Default to English for every user-visible output this skill produces — reports, hypothesis lists, the analysis confirmation gate, HITL step tables, and any other natural-language text. Detection rules (highest priority first):
 
-## 阶段 0：读取规则与确认边界
+1. The user explicitly requests a language in the current message (e.g. "reply in Japanese" / "用中文回答") → follow that instruction.
+2. The natural language of the user's current message → match it, among the three languages this skill currently supports: English, Chinese (中文), Japanese (日本語).
+3. The message's language falls outside that set, or can't be determined → default to English.
 
-先检查当前分支、工作区、仓库根目录规则和更具体目录规则。保留用户已有改动，不重置、不清理、不覆盖。读取 `CONTEXT.md` 和相关 ADR（如果存在），建立模块边界和约束模型。
+Regardless of the response language, technical identifiers stay in their original form and are never translated: file paths, commands, code, log/error text, stack traces, protocol fields, table/field/URL/ID literals, and the fixed markers this skill defines (`[DEBUG-<tag>]`, `ORIG_BRANCH`).
 
-识别项目的真实入口和验证命令：测试 runner、构建命令、静态分析、服务启动、CLI、浏览器/设备安装、数据库或协议检查。禁止从其他项目照搬命令。
+## Non-negotiable Rules
 
-若仓库自带 Bug 修复、Issue 收尾或缺陷归档流程（规则文件明文规定，或存在对应的命令/技能），以仓库流程为准；本 skill 只补其缺失的诊断阶段（阶段 1～5），不重复确认门、worktree 与归档。
+1. **Feedback loop before theory**: there must be a fast signal that goes red against the user's exact symptom before entering the hypothesis or fix stage.
+2. **Reproduce, then minimize**: run the full-fidelity repro first, confirm it's the user-reported failure, then remove inputs, callers, config, data, and steps one at a time.
+3. **No evidence, no conclusion**: without logs, data, a call chain, or a reproducible signal, only record the gap; never invent table names, fields, paths, IDs, URLs, APIs, or environment facts.
+4. **Every hypothesis must be falsifiable**: write the prediction and the minimal verification action; change one variable at a time.
+5. **RED before the production fix**: see the failure first on the correct test seam (a test entry point that represents the real call chain), then fix the root cause, then see the same test pass. When there is no correct seam, let Stage 2's original feedback loop stand in for RED/GREEN, and note "no correct seam" in the report.
+6. **Fix the root cause, not the symptom**: the root cause must land on a specific `file:line`, function, branch, or config entry, with its causal chain explained.
+7. **Redact before you show anything**: tokens, passwords, cookies, user data, and signed URLs in logs, requests, HARs, traces, core dumps, or environment output must be replaced with `<REDACTED>`.
+8. **Evidence and permission are separate**: analysis, testing, and file edits are not Git/GitHub write authorization; `worktree add`, `add`, `commit`, `push`, `merge`, `checkout`, `stash`, etc. all require explicit authorization.
+9. **Stop after two failed fix attempts**: stop layering more patches, explain why the current hypothesis failed, and ask for new environment evidence; or stop this skill and ask the user to switch to a planning flow with a pre-approved task list. See Stage 7 for how "one attempt" is counted.
 
-### 全程停止条件
+## Stage 0: Read the Rules and Confirm Boundaries
 
-以下条件在任一阶段一经确认即停止本 skill：输出已收集的证据，请用户改用带任务清单审批的规划流程。
+Check the current branch, working tree, repo-root rules, and any more specific directory rules first. Preserve the user's existing changes — no reset, no cleanup, no overwrite. Read `CONTEXT.md` and relevant ADRs if present, and build a model of module boundaries and constraints.
 
-- 需要架构重设计、存储/协议替换或新增公共 API；
-- 多个独立组件需要不同的非平凡逻辑；
-- 无法将根因定位到 `file:line` 或等价的配置/数据边界（阶段 5 结束仍如此）；
-- 无法建立能代表用户症状的反馈循环（按阶段 2 末尾“无法建立循环时”的流程尝试后仍如此）；
-- 根因定位后先勾勒 diff，估计修复明显超过约 150 行，或需要新增模块、公共数据结构或迁移（不在阶段 0 凭感觉猜）。
+Identify the project's real entry points and verification commands: test runner, build command, static analysis, service startup, CLI, browser/device install, database or protocol checks. Never carry over commands from a different project.
 
-## 阶段 1：结构化输入与证据脱敏
+If the repo already has its own bugfix, issue-closeout, or defect-archive flow (stated explicitly in a rules file, or backed by a matching command/skill), defer to it; this skill then only fills the diagnostic stages it's missing (Stages 1–5), and does not duplicate the confirmation gate, worktree, or archiving.
 
-整理但不臆测：来源、版本、平台/运行时、前置条件、复现步骤、期望行为、实际行为、发生频率、错误原文、日志和附件。输出时只保留能支持判断的行，先脱敏再引用。
+### Global Stop Conditions
 
-若输入缺少关键条件，列出缺口和需要用户提供的材料。不要用猜测填空。
+Any of the following, confirmed at any stage, stops this skill immediately: output the evidence gathered so far and ask the user to switch to a planning flow with a pre-approved task list.
 
-## 阶段 2：建立紧反馈循环
+- The fix needs an architecture redesign, a storage/protocol swap, or a new public API;
+- Multiple independent components each need distinct non-trivial logic;
+- The root cause can't be pinned to `file:line` or an equivalent config/data boundary (still true at the end of Stage 5);
+- A feedback loop representative of the user's symptom can't be established (still true after trying the "when a loop can't be established" flow at the end of Stage 2);
+- After the root cause is located, a quick diff sketch estimates the fix at clearly more than ~150 lines, or it needs a new module, a new public data structure, or a migration (don't guess this at Stage 0).
 
-反馈循环是整个诊断的核心。按当前系统能力选择最接近真实入口的信号，优先顺序如下：
+## Stage 1: Structured Intake and Evidence Redaction
 
-1. 能触达 Bug 的 failing test：unit、integration 或 E2E；
-2. 针对运行服务的 HTTP/API 脚本；
-3. 带 fixture 的 CLI 调用，并与已知正确输出比较；
-4. 浏览器或桌面自动化，断言可见结果、控制台、网络或进程状态；
-5. 真实请求、事件、日志或 trace 的脱敏 replay；
-6. 只启动必要依赖的 throwaway harness；
-7. property/fuzz/stress loop；
-8. 已知好坏版本、配置或数据集的 bisect/differential loop（涉及 `git bisect`/`checkout` 切换时先按规则 8 取得授权，并确认工作区干净或已由用户保存）；
-9. 必须人工操作时，使用结构化 HITL（human-in-the-loop，人工参与）循环：由代理先设计步骤表交给用户执行，每轮写明操作、预期观察、需要记录的实际观察项，以及要跑的次数（按报告的发生频率定，例如“十次里一两次”至少安排 10～20 轮）；用户回填结果后由代理记录。HITL 是合法循环——缺少自动化入口时先设计 HITL 步骤表，不要直接跳到“无法建立循环”。
+Organize without speculating: source, version, platform/runtime, preconditions, repro steps, expected behavior, actual behavior, frequency, the raw error text, logs, and attachments. Keep only the lines that support a judgment in the output, and redact before quoting.
 
-收紧循环：缩短启动时间，断言具体症状而不是“没有崩溃”，固定时间/随机种子/文件系统/网络，缓存无关初始化。偶发 Bug 通过重复、并行、压力、时序控制或固定随机性提高复现率，并记录频率和运行次数。性能问题使用基准测量、profiler、query plan 或 timing harness，不用大量日志替代测量。
+If the intake is missing key conditions, list the gaps and the material you need from the user. Don't fill gaps with guesses.
 
-新增文件的权限分层：放在测试目录、scratch 目录或临时 harness 位置、不改生产代码的，可以直接写并运行；需要在生产代码中加临时插桩的，先用一句话说明插桩位置和目的，得到用户确认后再改（这是轻量插桩确认，不是完整确认门）。已有命令、测试和日志可以只读运行。
+## Stage 2: Establish a Tight Feedback Loop
 
-### 完成条件
+The feedback loop is the core of the whole diagnosis. Pick the signal closest to the real entry point that the current system can support, in this priority order:
 
-阶段 2 只有在以下条件同时满足时完成：
+1. A failing test that reaches the bug: unit, integration, or E2E;
+2. An HTTP/API script against a running service;
+3. A CLI invocation with a fixture, compared against a known-good output;
+4. Browser or desktop automation asserting visible results, console, network, or process state;
+5. A redacted replay of a real request, event, log, or trace;
+6. A throwaway harness that starts only the necessary dependencies;
+7. A property/fuzz/stress loop;
+8. A bisect/differential loop over known-good/known-bad versions, configs, or datasets (if it involves `git bisect`/`checkout` switches, get authorization under Rule 8 first, and confirm the working tree is clean or already saved by the user);
+9. When manual operation is unavoidable, use a structured HITL (human-in-the-loop) cycle: the agent designs a step table first and hands it to the user to execute — each round spells out the action, the expected observation, which actual-observation fields need to be recorded, and how many rounds to run (sized to the reported frequency; e.g. "one or two times in ten" calls for at least 10–20 rounds). The agent records the results once the user fills them in. HITL is a legitimate loop — when there's no automated entry point, design the HITL step table first; don't jump straight to "a loop can't be established."
 
-- 已实际运行过一个命令并保留脱敏输出（HITL 循环例外：以步骤表已交付、等待用户回填为准）；
-- 它触达真实 Bug 路径并断言用户确切症状；
-- 它能针对该 Bug 变红，而不是只检查“不报错”；
-- 它足够快、可重复、可由代理无人值守运行；HITL 循环例外，但每轮人工步骤、观察和次数必须记录；
-- 偶发 Bug 已通过上面的手段提高到可诊断的复现率，并记录了频率和运行次数。
+Tighten the loop: shorten startup time, assert the specific symptom rather than "it didn't crash," pin time/random seed/filesystem/network, and cache irrelevant setup. For flaky bugs, raise the reproduction rate via repetition, parallelism, stress, timing control, or fixed randomness, and record the frequency and run count. For performance issues, use benchmark measurements, a profiler, a query plan, or a timing harness — don't substitute a pile of logs for measurement.
 
-无法建立循环（连 HITL 步骤表都无法设计）时，停止并列出已尝试内容，请用户提供可复现环境、脱敏 artifact，或明确授权临时插桩；不得直接进入假设。HITL 场景下可以先列出假设，但每条的“预测/验证”必须落到步骤表中用户要观察的项上，等回填后再判定。
+Permission tiers for new files: anything placed in a test directory, a scratch directory, or a temporary harness location, and that doesn't touch production code, can be written and run directly. Anything that needs temporary instrumentation in production code requires a one-line statement of where and why before you touch it, and the user's confirmation (this is the lightweight instrumentation confirmation, not the full confirmation gate). Existing commands, tests, and logs can be run read-only.
 
-## 阶段 3：复现与最小化
+### Completion Criteria
 
-运行反馈循环，确认错误模式就是用户描述的错误，而不是邻近失败。保存错误消息、错误输出、错误结果或性能数值。
+Stage 2 is complete only when all of the following hold:
 
-循环变红后，逐项删除输入、caller、配置、数据和操作步骤，每次删除后重新运行。完成标准是：保留下来的每一项都是 load-bearing，移除任意一项都会变绿。最小复现应成为后续回归测试的素材。
+- A command has actually been run and its redacted output kept (HITL loops are the exception: the step table having been delivered and awaiting the user's fill-in counts);
+- It reaches the real bug path and asserts the user's exact symptom;
+- It goes red against this bug specifically, not just "no error was thrown";
+- It's fast enough, repeatable, and can run unattended by the agent; HITL loops are the exception, but each round's manual steps, observations, and count must be recorded;
+- For flaky bugs, the reproduction rate has been raised to a diagnosable level via the means above, with frequency and run count recorded.
 
-非确定性问题不要求每次都失败；复现率与运行次数按阶段 2 的记录持续更新，达到足以区分假设的水平即可。
+If a loop can't be established (not even a HITL step table can be designed), stop, list what's been tried, and ask the user to provide a reproducible environment, a redacted artifact, or explicit authorization for temporary instrumentation; don't go straight to hypotheses. In HITL scenarios, hypotheses may be listed up front, but each one's "prediction/verification" must land on a field the step table asks the user to observe, to be judged once it's filled in.
 
-## 阶段 4：形成并验证假设
+## Stage 3: Reproduce and Minimize
 
-在测试任何假设前，列出 3～5 个按优先级排序的候选原因。每项使用以下格式：
+Run the feedback loop and confirm the failure mode is the one the user described, not a neighboring failure. Save the error message, error output, wrong result, or performance numbers.
+
+Once the loop is red, remove inputs, callers, config, data, and steps one item at a time, rerunning after each removal. Done when everything left is load-bearing — removing any one of them turns it green. The minimal repro should become the material for the later regression test.
+
+Non-deterministic issues don't need to fail every time; the reproduction rate and run count keep updating per Stage 2's record, and reaching a level that can discriminate between hypotheses is enough.
+
+## Stage 4: Form and Vet Hypotheses
+
+Before testing any hypothesis, list 3–5 ranked candidate causes. Use this format for each:
 
 ```text
-假设：<具体机制>
-证据：<支持或反对它的现有事实>
-预测：如果它成立，执行 <验证动作> 后应看到 <结果>
-验证：<一次只改变一个变量的最小动作>
+Hypothesis: <specific mechanism>
+Evidence: <existing facts that support or argue against it>
+Prediction: if it holds, running <verification action> should show <result>
+Verification: <the smallest action that changes exactly one variable>
 ```
 
-把假设列表展示给用户，允许用户补充领域信息。该检查点不阻塞：用户未回复时可继续阶段 5；它也不替代实现前的分析确认门。
+Show the hypothesis list to the user and let them add domain knowledge. This checkpoint doesn't block: proceed to Stage 5 if there's no reply; it also doesn't replace the pre-implementation analysis confirmation gate.
 
-## 阶段 5：定向插桩与根因定位
+## Stage 5: Targeted Instrumentation and Root-Cause Localization
 
-每个 probe 必须对应一个假设的预测。优先使用 debugger/REPL；其次在输入、输出和跨层边界添加最小日志。禁止“到处打印再 grep”。测试/scratch 目录中的 probe 可直接写；生产代码中的临时插桩按阶段 2 的轻量插桩确认执行。
+Every probe must correspond to one hypothesis's prediction. Prefer a debugger/REPL; failing that, add minimal logging at inputs, outputs, and cross-layer boundaries. Never "print everywhere and grep." Probes inside a test/scratch directory can be written directly; temporary instrumentation in production code follows the lightweight instrumentation confirmation from Stage 2.
 
-临时日志统一使用本轮唯一标记 `[DEBUG-<短标识>]`（阶段 8 按该前缀清理），不得包含未脱敏的凭据或用户内容。性能问题使用测量工具。每次只改变一个变量，并记录该 probe 使哪个假设变强或变弱。
+Temporary logs use one unique marker per round, `[DEBUG-<short-tag>]` (cleaned up by that prefix in Stage 8), and must never contain unredacted credentials or user content. Use a measurement tool for performance issues. Change one variable at a time, and record whether each probe strengthened or weakened a hypothesis.
 
-阶段 5 的完成标准：已将根因定位到源码、配置、数据或协议边界的具体位置，并能用反馈循环解释“为什么这个位置会产生用户症状”。仍不确定时回到阶段 4 重排假设，或申请新的插桩/环境证据；仍无法定位时按全程停止条件停止。不得把最高分假设写成事实。
+Stage 5's completion bar: the root cause is pinned to a specific location in source, config, data, or a protocol boundary, and the feedback loop can explain "why this location produces the user's symptom." If still uncertain, go back to Stage 4 to re-rank hypotheses, or request new instrumentation/environment evidence; if still unable to localize it, stop per the Global Stop Conditions. Never write the top-ranked hypothesis down as fact.
 
-## 阶段 5b：影响面与历史核查
+## Stage 5b: Impact Surface and Historical Check
 
-根因定位后、进入确认门前完成，产出确认门报告第 6～9 项：
+Complete this after the root cause is located and before the confirmation gate, to produce items 6–9 of the confirmation-gate report:
 
-1. **历史改动**：对根因位置运行 `git log -L <起始行>,<结束行>:<文件>`（或 `git blame` + `git log -S<关键字>`），记录最近 1～3 次相关提交/PR/Issue；仓库不是 git 时写“无历史”。
-2. **相似 Bug**：用错误原文关键词和模块名各搜一次仓库的缺陷归档目录（如 `docs/bugs/`）、Issue tracker、CHANGELOG；记录命中，或“未命中（已搜 X/Y/Z）”。
-3. **回归范围**：根因函数/配置的直接调用方 → 必测；同模块其它入口 → 建议测；间接依赖 → 抽测；历史命中提交所附的测试归入必测。
-4. **风险等级**：仅内部逻辑、无持久化 = 低；公共接口、持久化或协议 = 中；并发、迁移、安全或支付 = 高。
-5. **方案对比**：至少写“最小修复”与一个替代方案各一行；只有一种时写“无替代，原因：…”。
-6. **排查建议**：针对仍未决的证据缺口，列出用户可执行的日志、查询或抓包命令；没有缺口时写“无”。
+1. **Historical changes**: run `git log -L <start-line>,<end-line>:<file>` on the root-cause location (or `git blame` + `git log -S<keyword>`), and record the most recent 1–3 relevant commits/PRs/issues; write "no history" if the repo isn't git.
+2. **Similar bugs**: search the repo's defect archive (e.g. `docs/bugs/`), issue tracker, and CHANGELOG once each with the raw error keywords and the module name; record hits, or "no hit (searched X/Y/Z)".
+3. **Regression scope**: direct callers of the root-cause function/config → must-test; other entry points in the same module → suggested test; indirect dependents → spot-check; tests attached to a matching historical commit → must-test.
+4. **Risk level**: internal logic only, no persistence = low; public interface, persistence, or protocol = medium; concurrency, migration, security, or payments = high.
+5. **Options compared**: write at least one line each for "minimal fix" and one alternative; if there's only one option, write "no alternative, because: …".
+6. **Investigation suggestions**: for evidence gaps still open, list logging/query/capture commands the user can run; write "none" if there are no gaps.
 
-## 分析确认门（进入阶段 6 前，只发一次）
+## Analysis Confirmation Gate (sent once, before Stage 6)
 
-在生产修复和 Git 写操作前，向用户输出并等待明确确认。测试/scratch 目录的 harness 与生产插桩的轻量确认已在阶段 2/5 处理，不在此重复。报告固定包含：
+Output this and wait for explicit confirmation before the production fix and any Git write operation. The lightweight confirmations for test/scratch harnesses (Stage 2) and production instrumentation (Stage 5) were already handled inline and are not repeated here. The report always includes:
 
-1. 结构化输入与脱敏证据；
-2. 可变红的反馈循环、命令和实际结果；
-3. 最小复现与复现率；
-4. 3～5 个排序假设、预测和验证结果；
-5. 根因定位与调用链；
-6. 未决证据缺口的日志/数据/协议排查建议（阶段 5b）；
-7. 历史改动与相似 Bug 关联（阶段 5b）；
-8. 必测、建议测、抽测回归范围（阶段 5b）；
-9. 风险等级、改动范围和方案对比（阶段 5b）；
-10. 未决证据、权限需求，以及进入实现前仍需满足的条件（待确认项、待授权项、待用户提供的材料）。
+1. Structured intake and redacted evidence;
+2. The feedback loop that goes red, its commands, and the actual results;
+3. Minimal repro and reproduction rate;
+4. 3–5 ranked hypotheses, predictions, and verification results;
+5. Root-cause location and call chain;
+6. Investigation suggestions for open evidence gaps (Stage 5b);
+7. Historical changes and related past bugs (Stage 5b);
+8. Must-test / suggested / spot-check regression scope (Stage 5b);
+9. Risk level, change scope, and compared options (Stage 5b);
+10. Open evidence, permission needs, and any conditions still to be met before implementation (pending confirmations, pending authorizations, material still needed from the user).
 
-## 阶段 6：隔离与 RED
+## Stage 6: Isolation and RED
 
-用户确认方案后，只有在获得 Git 写授权时才创建独立 worktree；记录 `ORIG_BRANCH` 和 worktree 路径。未获得授权时不得运行 `git worktree add`，按用户选择在当前 checkout 编辑，或暂停等待授权。
+Once the user has confirmed the plan, create an isolated worktree only if Git write authorization has been granted; record `ORIG_BRANCH` and the worktree path. Without authorization, never run `git worktree add` — edit in the current checkout per the user's choice, or pause and wait for authorization.
 
-阶段 2 的循环若已经是正确 seam 上的 failing test，直接复用为回归测试，跳过下面第 1～3 条。否则在能代表真实调用链的正确测试 seam 上，把最小复现转成回归测试：
+If Stage 2's loop is already a failing test on the correct seam, reuse it directly as the regression test and skip items 1–3 below. Otherwise, turn the minimal repro into a regression test on a correct test seam that represents the real call chain:
 
-1. 优先扩展覆盖同一公共入口的现有测试；
-2. 测试用户可观察行为，不测试 mock 自己被调用；
-3. 如果浅层 seam 无法重现真实调用链，记录“缺少正确 seam”，以阶段 2 的原始反馈循环充当 RED/GREEN（规则 5），不要制造虚假安全感；
-4. 运行测试并确认因目标症状失败；
-5. RED 不是导入错误、fixture 错误或环境错误。
+1. Prefer extending an existing test that already covers the same public entry point;
+2. Test user-observable behavior, not "the mock got called";
+3. If a shallow seam can't reproduce the real call chain, record "missing correct seam" and let Stage 2's original feedback loop stand in for RED/GREEN (Rule 5) — don't manufacture a false sense of safety;
+4. Run the test and confirm it fails for the target symptom;
+5. RED is not an import error, a fixture error, or an environment error.
 
-## 阶段 7：根因修复与 GREEN
+## Stage 7: Root-Cause Fix and GREEN
 
-只改根因所在的最小范围。恢复原始的未最小化场景，先让回归测试 GREEN，再重新运行阶段 2 的原始反馈循环，确认用户症状消失。
+Change only the minimal area where the root cause lives. Restore the original, unminimized scenario, get the regression test to GREEN first, then rerun Stage 2's original feedback loop and confirm the user's symptom is gone.
 
-GREEN 未达成、或原始循环仍复现，计为一次失败尝试：回到阶段 4 重排假设；第二次尝试前只需向用户输出变更点，不重发完整报告；两次失败按规则 9 停止。
+If GREEN isn't reached, or the original loop still reproduces the bug, that counts as one failed attempt: go back to Stage 4 to re-rank hypotheses; before the second attempt, just report the delta to the user rather than the full report again; two failed attempts means stop per Rule 9.
 
-根据阶段 0 识别的技术栈执行对应的静态分析、构建、契约检查、数据库检查、原生平台检查或设备验证。不要默认使用某种语言、框架、包管理器、数据库或客户端工具。
+Run whatever static analysis, build, contract check, database check, native-platform check, or device verification fits the stack identified in Stage 0. Don't default to assuming any particular language, framework, package manager, database, or client tool.
 
-## 阶段 8：清理、验证与交付
+## Stage 8: Cleanup, Verification, and Delivery
 
-在宣称完成前必须：
+Before claiming completion:
 
-- 原始反馈循环不再复现；
-- 回归测试通过；没有正确 seam 时已记录限制；
-- 所有 `[DEBUG-<短标识>]` 临时插桩已清除（按阶段 5 记录的标记逐一核对）；
-- throwaway harness/prototype 已删除或移到明确的 debug 位置；
-- 运行项目真实的全量测试、静态检查和必要的端到端入口；
-- 阶段 5b 命中的历史提交所附测试单独运行并报告结果；未命中时写“历史核查未命中”；
-- `git diff --check` 通过；
-- 报告实际命令、退出码、通过/失败数量和未验证项；
-- 把最终确认的根因写入提交/PR说明或 Bug 归档。
+- The original feedback loop no longer reproduces the bug;
+- The regression test passes; any missing-correct-seam limitation is recorded;
+- Every `[DEBUG-<short-tag>]` temporary probe has been removed (check off each marker recorded in Stage 5);
+- Any throwaway harness/prototype has been deleted or moved to a clearly labeled debug location;
+- The project's real full test suite, static checks, and any necessary end-to-end entry points have been run;
+- Tests attached to a historical commit hit in Stage 5b are run separately and their result reported; write "historical check: no hit" if there was none;
+- `git diff --check` passes;
+- The actual commands, exit codes, pass/fail counts, and anything unverified are reported;
+- The finally-confirmed root cause is written into the commit/PR description or a bug archive.
 
-项目适配通过“读取规则后选择命令”完成：移动端、桌面端、服务端、CLI、浏览器、数据管道和硬件系统只执行其真实存在的验证层。若仓库规定 `docs/bugs/` 或其他缺陷归档目录（规则文件明文，或该目录已存在），则无论是否关联 Issue 都必须归档，至少包含现象、根因、方案、改动文件、历史核查、RED/GREEN、回归范围和未覆盖项；两者都没有时在报告写“无归档目录”。
+Project fit comes from "read the rules, then pick commands": mobile, desktop, server, CLI, browser, data-pipeline, and hardware systems each only run the verification layers that actually exist for them. If the repo mandates `docs/bugs/` or another defect-archive directory (stated explicitly in a rules file, or the directory already exists), archive regardless of whether an issue is linked, with at minimum the symptom, root cause, fix, changed files, historical check, RED/GREEN, regression scope, and anything not covered; if neither condition holds, write "no archive directory" in the report.
 
-用户明确授权后才能提交、回写 Issue、合并回 `ORIG_BRANCH`、删除 worktree 或 push。按仓库已有的 Issue、提交和合并流程收尾；没有授权时明确写“未执行 Git 写操作”。
+Only commit, write back to the issue, merge back into `ORIG_BRANCH`, delete the worktree, or push once the user has explicitly authorized it. Close out using the repo's existing issue/commit/merge flow; if there's no authorization, state clearly "no Git write operations were performed."
 
-## 触发示例
+## Trigger Examples
 
-应使用本 skill：
+Use this skill for:
 
-- “这个测试失败了，先建立能稳定复现的最小 Bug，再修复。”
-- “这个接口偶发返回错误结果，帮我诊断并做回归验证。”
-- “性能最近变慢了，按证据找根因，不要直接猜数据库。”
+- "This test is failing — build a stable minimal repro first, then fix it."
+- "This endpoint occasionally returns a wrong result — diagnose it and add a regression check."
+- "Performance has degraded recently — find the root cause from evidence, don't just guess it's the database."
+- "Fix this cross-service/cross-platform bug and keep historical and E2E evidence."
+- 「テストが落ちる。まず安定して再現する最小ケースを作ってから直して。」
+- 「このエンドポイントがたまに間違った結果を返す。証拠ベースで原因を特定して直して。」
+- “最近性能变差了，按证据找根因，不要直接猜是数据库。”
 - “修复这个跨服务/跨平台 Bug，并保留历史和 E2E 证据。”
 
-不应使用本 skill：
+Don't use this skill for:
 
-- 新功能、体验优化或对正常行为的性能优化：不使用本 skill。
-- 只做日志阅读、不允许任何文件编辑：只执行阶段 0～5 的只读子集，不进入阶段 6。
-- 架构迁移、多个独立组件改造或需要预先批准任务清单：不使用本 skill，改用带任务清单审批的规划流程。
-- 已验证的修复只差提交/回写 Issue：按仓库既有的提交与 Issue 流程收尾，不使用本 skill。
+- A new feature, UX polish, or tuning already-correct behavior for performance: don't use this skill.
+- Log-reading only, no file edits allowed: run only the read-only subset of Stages 0–5, and don't enter Stage 6.
+- An architecture migration, a rework of multiple independent components, or work that needs a pre-approved task list: don't use this skill — switch to a planning flow with a pre-approved task list instead.
+- A verified fix that just needs to be committed/written back to an issue: close it out via the repo's existing commit and issue flow; don't use this skill.
