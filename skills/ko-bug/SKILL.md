@@ -14,7 +14,7 @@ It is a self-contained bugfix protocol: a tight feedback loop constrains diagnos
 Default to English for every user-visible output this skill produces — reports, hypothesis lists, the analysis confirmation gate, HITL step tables, and any other natural-language text. Detection rules (highest priority first):
 
 1. The user explicitly requests a language in the current message (e.g. "reply in Japanese" / "用中文回答") → follow that instruction.
-2. The natural language of the user's current message → match it, among the three languages this skill currently supports: English, Chinese (中文), Japanese (日本語).
+2. The natural language of the user's current message → match it among the supported languages: English, Chinese (中文), Japanese (日本語), Korean (한국어), Spanish (Español), French (Français), and Portuguese (Português).
 3. The message's language falls outside that set, or can't be determined → default to English.
 
 Regardless of the response language, technical identifiers stay in their original form and are never translated: file paths, commands, code, log/error text, stack traces, protocol fields, table/field/URL/ID literals, and the fixed markers this skill defines (`[DEBUG-<tag>]`, `ORIG_BRANCH`).

@@ -33,7 +33,7 @@ Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-gith
 and follow it for the rest of this conversation.
 ```
 
-Works with a bug description in English, Chinese, or Japanese, on any AI you give it to.
+Works with bug descriptions in English, Chinese, Japanese, Korean, Spanish, French, or Portuguese, on any AI you give it to.
 
 ## Evals (skill-up)
 
@@ -69,9 +69,6 @@ skills/
     # no vendor-specific manifest is required
   ko-github/
     SKILL.md
-    evals/
-      eval.yaml
-      cases/*.yaml
     evals/
       eval.yaml
       cases/*.yaml

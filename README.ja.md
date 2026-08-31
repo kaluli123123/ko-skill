@@ -33,7 +33,7 @@ Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-gith
 and follow it for the rest of this conversation.
 ```
 
-バグの説明は英語・中国語・日本語のいずれでも構いません。どの AI に渡しても同じです。
+バグの説明は英語・中国語・日本語・韓国語・スペイン語・フランス語・ポルトガル語のいずれでも構いません。どの AI に渡しても同じです。
 
 ## 評価（skill-up）
 
@@ -69,10 +69,6 @@ skills/
     # ベンダー固有のマニフェストは不要
   ko-github/
     SKILL.md
-    agents/openai.yaml
-    evals/
-      eval.yaml
-      cases/*.yaml
     evals/
       eval.yaml
       cases/*.yaml

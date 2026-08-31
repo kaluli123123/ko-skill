@@ -2,8 +2,6 @@
 
 🌐 [English](README.md) | **中文** | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Français](README.fr.md) | [Português](README.pt.md)
 
-🌐 [English](README.md) | **中文** | [日本語](README.ja.md)
-
 一组独立的 Agent Skill——纯文本的指令文件，任何 AI 都能用，不绑定某一家产品。这里的 skill 都遵循开放的 [Agent Skills 规范](https://agentskills.io)。
 
 | Skill | 用途 |
@@ -35,7 +33,7 @@ Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-gith
 and follow it for the rest of this conversation.
 ```
 
-用英文、中文或日文描述 bug 都可以，装到哪个 AI 上都一样。
+支持用英文、中文、日文、韩文、西班牙文、法文或葡萄牙文描述 bug，装到哪个 AI 上都一样。
 
 ## 评测（skill-up）
 
@@ -68,13 +66,11 @@ skill-up validate skills/ko-github/evals/eval.yaml
 skills/
   ko-bug/
     SKILL.md              # 技能正文——任何 AI 真正需要的只有这一个文件
-    agents/openai.yaml    # 可选：Codex 专属的界面元数据，其它工具会忽略它
-  ko-github/
-    SKILL.md
-    agents/openai.yaml
     evals/
       eval.yaml
       cases/*.yaml
+  ko-github/
+    SKILL.md
     evals/
       eval.yaml
       cases/*.yaml

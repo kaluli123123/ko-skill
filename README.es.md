@@ -16,7 +16,7 @@ npx skills add kaluli123123/ko-skill@ko-bug
 npx skills add kaluli123123/ko-skill@ko-github
 ```
 
-Cada `SKILL.md` es texto plano y puede usarse con cualquier IA capaz de leer instrucciones. Se admiten entradas en inglés, chino, japonés y coreano; responde en el idioma del usuario.
+Cada `SKILL.md` es texto plano y puede usarse con cualquier IA capaz de leer instrucciones. Se admiten entradas en inglés, chino, japonés, coreano, español, francés y portugués; responde en el idioma del usuario.
 
 ## Notas importantes
 

@@ -16,7 +16,7 @@ npx skills add kaluli123123/ko-skill@ko-bug
 npx skills add kaluli123123/ko-skill@ko-github
 ```
 
-Chaque `SKILL.md` est un fichier texte utilisable avec toute IA capable de lire des instructions. Les entrées en anglais, chinois, japonais et coréen sont prises en charge ; réponds dans la langue de l’utilisateur.
+Chaque `SKILL.md` est un fichier texte utilisable avec toute IA capable de lire des instructions. Les entrées en anglais, chinois, japonais, coréen, espagnol, français et portugais sont prises en charge ; réponds dans la langue de l’utilisateur.
 
 ## Notes importantes
 
