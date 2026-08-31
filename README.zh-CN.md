@@ -1,5 +1,7 @@
 # ko-skill
 
+🌐 [English](README.md) | **中文** | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Français](README.fr.md) | [Português](README.pt.md)
+
 🌐 [English](README.md) | **中文** | [日本語](README.ja.md)
 
 一组独立的 Agent Skill——纯文本的指令文件，任何 AI 都能用，不绑定某一家产品。这里的 skill 都遵循开放的 [Agent Skills 规范](https://agentskills.io)。

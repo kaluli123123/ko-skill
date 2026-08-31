@@ -1,6 +1,6 @@
 # ko-skill
 
-🌐 **English** | [中文](README.zh-CN.md) | [日本語](README.ja.md)
+🌐 **English** | [中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Français](README.fr.md) | [Português](README.pt.md)
 
 A set of standalone Agent Skills — plain instruction files any AI can use, not tied to one vendor or product. Skills here follow the open [Agent Skills specification](https://agentskills.io).
 
@@ -13,7 +13,7 @@ A set of standalone Agent Skills — plain instruction files any AI can use, not
 
 ### Recommended: the `skills` CLI
 
-This repo is discoverable by the community-maintained [`skills` CLI](https://github.com/vercel-labs/skills) — one command, works across 77+ AI coding agents (Claude Code, Codex, Cursor, Windsurf, Gemini CLI, GitHub Copilot, and more), auto-detecting whichever ones you already have installed:
+This repo is discoverable by the community-maintained [`skills` CLI](https://github.com/vercel-labs/skills) — one command, works across many AI coding agents, and auto-detects whichever ones you already have installed:
 
 ```bash
 npx skills add kaluli123123/ko-skill@ko-bug
@@ -66,10 +66,9 @@ Run artifacts land in `skills/ko-bug-workspace/` (skill-up places them next to t
 skills/
   ko-bug/
     SKILL.md              # skill body — the only file any AI actually needs
-    agents/openai.yaml    # optional: Codex-specific interface metadata, ignored elsewhere
+    # no vendor-specific manifest is required
   ko-github/
     SKILL.md
-    agents/openai.yaml
     evals/
       eval.yaml
       cases/*.yaml
@@ -79,4 +78,16 @@ skills/
       fixtures/scripts/   # script judge
 ```
 
-The `skills/<name>/SKILL.md` layout matches what the `skills` CLI (and Codex, Claude Code, and most other agents) auto-discover — no extra manifest needed.
+The `skills/<name>/SKILL.md` layout matches what the `skills` CLI, Codex, Claude Code, and most other agents auto-discover — no vendor-specific manifest is required.
+
+## Claude Code marketplace
+
+This repository also includes an optional Claude Code marketplace wrapper:
+
+```text
+/plugin marketplace add kaluli123123/ko-skill
+/plugin install ko-bug@ko-skill-marketplace
+/plugin install ko-github@ko-skill-marketplace
+```
+
+The core skills remain platform-neutral. The `.claude-plugin/` files only provide Claude Code distribution metadata.

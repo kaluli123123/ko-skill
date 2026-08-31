@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ko-skill-marketplace",
+  "description": "Portable, evidence-first Agent Skills for bugfixing and GitHub reuse research.",
+  "owner": {
+    "name": "kaluli123123"
+  },
+  "plugins": [
+    {
+      "name": "ko-bug",
+      "description": "Evidence-first bug diagnosis and fix protocol.",
+      "source": "./skills/ko-bug"
+    },
+    {
+      "name": "ko-github",
+      "description": "Evidence-based GitHub reuse research before substantial feature work.",
+      "source": "./skills/ko-github"
+    }
+  ]
+}

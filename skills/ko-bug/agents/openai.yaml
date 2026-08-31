@@ -1,4 +1,0 @@
-interface:
-  display_name: "Evidence-first Bugfix"
-  short_description: "Diagnose and fix bugs from evidence, with TDD and a regression closeout"
-  default_prompt: "Use $ko-bug to diagnose and fix this bug, evidence-first: "

@@ -1,6 +1,6 @@
 # ko-skill
 
-🌐 [English](README.md) | [中文](README.zh-CN.md) | **日本語**
+🌐 [English](README.md) | [中文](README.zh-CN.md) | **日本語** | [한국어](README.ko.md) | [Español](README.es.md) | [Français](README.fr.md) | [Português](README.pt.md)
 
 独立した Agent Skill 集です——プレーンな指示ファイルで、特定のベンダーや製品に縛られず、どの AI でも使えます。ここにある Skill はすべて、オープンな [Agent Skills 仕様](https://agentskills.io)に従っています。
 
@@ -66,7 +66,7 @@ skill-up validate skills/ko-github/evals/eval.yaml
 skills/
   ko-bug/
     SKILL.md              # Skill 本体——どの AI にとっても本当に必要なのはこのファイルだけ
-    agents/openai.yaml    # 任意：Codex 専用のインターフェースメタデータ。他のツールは無視する
+    # ベンダー固有のマニフェストは不要
   ko-github/
     SKILL.md
     agents/openai.yaml
