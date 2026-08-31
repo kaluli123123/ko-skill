@@ -7,6 +7,7 @@ A set of standalone Agent Skills — plain instruction files any AI can use, not
 | Skill | Purpose |
 |-------|---------|
 | [`ko-bug`](skills/ko-bug/SKILL.md) | Evidence-first bug diagnosis and fix protocol: feedback loop → reproduce & minimize → falsifiable hypotheses → targeted instrumentation → impact/historical check → analysis confirmation gate → RED/GREEN → verified delivery |
+| [`ko-github`](skills/ko-github/SKILL.md) | GitHub reuse strategy: compare existing projects, templates, and libraries before building, then choose direct use, customization, or greenfield development |
 
 ## Install
 
@@ -16,6 +17,7 @@ This repo is discoverable by the community-maintained [`skills` CLI](https://git
 
 ```bash
 npx skills add kaluli123123/ko-skill@ko-bug
+npx skills add kaluli123123/ko-skill@ko-github
 ```
 
 Add `-g` to install globally (all your projects) instead of just the current one, `-y` to skip confirmation prompts, or `-a <agent>` (e.g. `-a claude-code -a codex`) to target specific agents instead of auto-detecting. Run `npx skills --help` for the full option list, or see the [`skills` CLI README](https://github.com/vercel-labs/skills) for every supported agent and its install path.
@@ -25,7 +27,7 @@ Add `-g` to install globally (all your projects) instead of just the current one
 Every skill is just a `SKILL.md` file: plain-language instructions. Any AI assistant that can read text can follow it, `skills` CLI or not — paste this into the chat, a system prompt, or a custom-instructions field:
 
 ```text
-Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-bug/SKILL.md
+Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-github/SKILL.md
 and follow it for the rest of this conversation.
 ```
 
@@ -60,6 +62,9 @@ skills/
   ko-bug/
     SKILL.md              # skill body — the only file any AI actually needs
     agents/openai.yaml    # optional: Codex-specific interface metadata, ignored elsewhere
+  ko-github/
+    SKILL.md
+    agents/openai.yaml
     evals/
       eval.yaml
       cases/*.yaml

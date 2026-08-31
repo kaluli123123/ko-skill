@@ -7,6 +7,7 @@
 | Skill | 用途 |
 |-------|------|
 | [`ko-bug`](skills/ko-bug/SKILL.md) | 証拠優先のバグ診断・修正プロトコル：フィードバックループ → 再現と最小化 → 反証可能な仮説 → ターゲットを絞った計測 → 影響範囲・過去事例の確認 → 分析確認ゲート → RED/GREEN → 検証済みの成果物 |
+| [`ko-github`](skills/ko-github/SKILL.md) | GitHub 再利用戦略：開発前に既存のプロジェクト、テンプレート、ライブラリを比較し、直接利用・二次開発・新規開発を選択 |
 
 ## インストール
 
@@ -16,6 +17,7 @@
 
 ```bash
 npx skills add kaluli123123/ko-skill@ko-bug
+npx skills add kaluli123123/ko-skill@ko-github
 ```
 
 `-g` を付けると（現在のプロジェクトだけでなく）すべてのプロジェクトに対してグローバルにインストールされ、`-y` で確認プロンプトをスキップ、`-a <agent>`（例：`-a claude-code -a codex`）で自動検出ではなく特定のエージェントを指定できます。オプション全体は `npx skills --help`、対応エージェントとそれぞれのインストール先は [`skills` CLI の README](https://github.com/vercel-labs/skills) を参照してください。
@@ -25,7 +27,7 @@ npx skills add kaluli123123/ko-skill@ko-bug
 各 Skill は単なる `SKILL.md` ファイルです：平文の指示にすぎません。テキストを読める AI であれば、`skills` CLI の有無にかかわらず従うことができます——チャット、システムプロンプト、カスタム指示欄などに以下を貼り付けてください：
 
 ```text
-Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-bug/SKILL.md
+Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-github/SKILL.md
 and follow it for the rest of this conversation.
 ```
 
@@ -60,6 +62,9 @@ skills/
   ko-bug/
     SKILL.md              # Skill 本体——どの AI にとっても本当に必要なのはこのファイルだけ
     agents/openai.yaml    # 任意：Codex 専用のインターフェースメタデータ。他のツールは無視する
+  ko-github/
+    SKILL.md
+    agents/openai.yaml
     evals/
       eval.yaml
       cases/*.yaml

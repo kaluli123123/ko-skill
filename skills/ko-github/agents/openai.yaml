@@ -1,0 +1,4 @@
+interface:
+  display_name: "KO GitHub"
+  short_description: "先找 GitHub 轮子再开发"
+  default_prompt: "使用 $ko-github 评估 GitHub 上可复用的项目、模板和库。"

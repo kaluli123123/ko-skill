@@ -7,6 +7,7 @@
 | Skill | 用途 |
 |-------|------|
 | [`ko-bug`](skills/ko-bug/SKILL.md) | 证据优先的 Bug 诊断与修复协议：反馈循环 → 复现与最小化 → 可证伪假设 → 定向插桩 → 影响面/历史核查 → 分析确认门 → RED/GREEN → 验证交付 |
+| [`ko-github`](skills/ko-github/SKILL.md) | GitHub 复用方案评估：开发前比较现有项目、模板和库，再决定直接使用、二次开发或从零开发 |
 
 ## 安装
 
@@ -16,6 +17,7 @@
 
 ```bash
 npx skills add kaluli123123/ko-skill@ko-bug
+npx skills add kaluli123123/ko-skill@ko-github
 ```
 
 加 `-g` 装成全局（对所有项目生效，而不只是当前这个），加 `-y` 跳过确认，或用 `-a <agent>`（比如 `-a claude-code -a codex`）指定具体装到哪几个 agent，而不是自动检测。完整选项跑 `npx skills --help`，每个支持的 agent 及其安装路径见 [`skills` CLI 的 README](https://github.com/vercel-labs/skills)。
@@ -25,7 +27,7 @@ npx skills add kaluli123123/ko-skill@ko-bug
 每个 skill 就是一个 `SKILL.md` 文件：纯文本指令。任何能读文字的 AI 助手都能照着执行，不管有没有 `skills` CLI——把下面这段贴进对话、system prompt，或自定义指令栏就行：
 
 ```text
-Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-bug/SKILL.md
+Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-github/SKILL.md
 and follow it for the rest of this conversation.
 ```
 
@@ -60,6 +62,9 @@ skills/
   ko-bug/
     SKILL.md              # 技能正文——任何 AI 真正需要的只有这一个文件
     agents/openai.yaml    # 可选：Codex 专属的界面元数据，其它工具会忽略它
+  ko-github/
+    SKILL.md
+    agents/openai.yaml
     evals/
       eval.yaml
       cases/*.yaml
