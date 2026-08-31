@@ -1,0 +1,30 @@
+id: asks-for-missing-context
+title: "A vague build request asks for decision-critical context before research"
+description: |
+  When the target users, workflow, stage, and constraints are missing, the skill should ask
+  a concise intake batch rather than inventing a stack or GitHub repositories.
+
+input:
+  prompt: |
+    使用 $ko-github，帮我做一个产品。先去 GitHub 找轮子并给我方案。
+
+constraints:
+  timeout_seconds: 300
+  max_turns: 10
+
+expect:
+  must_not_contain:
+    - "我已经找到"
+    - "推荐直接使用"
+  must_contain:
+    - "谁"
+    - "做什么"
+
+judge:
+  type: agent_judge
+  model: anthropic/claude-sonnet-4-6
+  criteria:
+    - "The response asks for missing decision-critical facts instead of inventing a product direction, stack, architecture, or repository"
+    - "The questions cover the target user, required workflow, project stage, and meaningful constraints such as team, deadline, budget, deployment, or priority"
+    - "The response remains concise and does not pretend that GitHub research has already been completed"
+  pass_threshold: 0.75

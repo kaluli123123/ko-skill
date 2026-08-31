@@ -1,0 +1,32 @@
+id: should-trigger-new-feature
+title: "A substantial new feature triggers a bounded GitHub reuse assessment"
+description: |
+  The agent should research reusable open-source options before proposing implementation,
+  compare candidates with evidence, and choose direct use, customization, or greenfield work.
+
+input:
+  prompt: |
+    使用 $ko-github。我们想做一个面向小团队的 AI 知识库：支持 Markdown/PDF 上传、全文检索、
+    RAG 问答、团队成员权限和 Docker 部署。团队是 2 名熟悉 TypeScript 的开发者，优先快速做出
+    MVP，但不希望后续被难以维护的方案锁死。先不要写代码，请先找 GitHub 上可复用的项目，
+    最后告诉我应该直接使用、二次开发，还是从零开发。
+
+constraints:
+  timeout_seconds: 900
+  max_turns: 30
+
+expect:
+  must_contain:
+    - "GitHub"
+  must_not_contain:
+    - "已经开始写代码"
+
+judge:
+  type: agent_judge
+  model: anthropic/claude-sonnet-4-6
+  criteria:
+    - "The response evaluates at least two relevant GitHub or open-source candidates, or explicitly explains why fewer were available"
+    - "The response discusses maintenance/activity, license, technical fit, integration or deployment complexity, and reusable scope"
+    - "The response makes one explicit recommendation among direct use, customization, and greenfield development, with tradeoffs and failure conditions"
+    - "The response does not implement code before the reuse assessment"
+  pass_threshold: 0.75

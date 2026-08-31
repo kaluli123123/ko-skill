@@ -7,7 +7,7 @@ A set of standalone Agent Skills — plain instruction files any AI can use, not
 | Skill | Purpose |
 |-------|---------|
 | [`ko-bug`](skills/ko-bug/SKILL.md) | Evidence-first bug diagnosis and fix protocol: feedback loop → reproduce & minimize → falsifiable hypotheses → targeted instrumentation → impact/historical check → analysis confirmation gate → RED/GREEN → verified delivery |
-| [`ko-github`](skills/ko-github/SKILL.md) | GitHub reuse strategy: compare existing projects, templates, and libraries before building, then choose direct use, customization, or greenfield development |
+| [`ko-github`](skills/ko-github/SKILL.md) | Before building a substantial feature, find and compare reusable GitHub projects, starters, templates, and libraries; choose direct use, customization, or greenfield development with evidence |
 
 ## Install
 
@@ -19,6 +19,8 @@ This repo is discoverable by the community-maintained [`skills` CLI](https://git
 npx skills add kaluli123123/ko-skill@ko-bug
 npx skills add kaluli123123/ko-skill@ko-github
 ```
+
+Use `ko-github` when you are about to build a substantial feature and want to avoid reinventing an existing open-source solution. It is not needed for small bug fixes, copy or UI tweaks, configuration-only changes, or simple internal edits.
 
 Add `-g` to install globally (all your projects) instead of just the current one, `-y` to skip confirmation prompts, or `-a <agent>` (e.g. `-a claude-code -a codex`) to target specific agents instead of auto-detecting. Run `npx skills --help` for the full option list, or see the [`skills` CLI README](https://github.com/vercel-labs/skills) for every supported agent and its install path.
 
@@ -41,6 +43,7 @@ Each skill ships its own `evals/`, run with [skill-up](https://alibaba.github.io
 skill-up validate skills/ko-bug/evals/eval.yaml
 skill-up run      skills/ko-bug/evals/eval.yaml              # default claude_code engine, needs ANTHROPIC_API_KEY
 skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
+skill-up validate skills/ko-github/evals/eval.yaml
 ```
 
 `ko-bug`'s three cases each lock down one core behavior, one in each supported language:
@@ -55,6 +58,8 @@ Each case's judge also asserts the response matches the expected language (scrip
 
 Run artifacts land in `skills/ko-bug-workspace/` (skill-up places them next to the skill under test; already gitignored).
 
+`ko-github` also includes three cases covering substantial-feature research, small-fix exclusions, and missing-context intake.
+
 ## Layout
 
 ```
@@ -65,6 +70,9 @@ skills/
   ko-github/
     SKILL.md
     agents/openai.yaml
+    evals/
+      eval.yaml
+      cases/*.yaml
     evals/
       eval.yaml
       cases/*.yaml

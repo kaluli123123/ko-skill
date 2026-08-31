@@ -1,0 +1,40 @@
+id: should-skip-small-fix
+title: "A small bug fix does not trigger the GitHub reuse workflow"
+description: |
+  The skill's exclusion boundary should prevent unnecessary repository research for a
+  localized bug fix that does not require a new project, module, or dependency.
+
+input:
+  prompt: |
+    `average(scores)` 在 `scores` 为空时会返回错误，这是预期行为。现在只修复一个拼写错误：
+    把错误消息里的"切片"改成"分数列表"。不要修改其它逻辑。
+
+context:
+  files:
+    "average.go": |
+      package main
+
+      import "errors"
+
+      func average(scores []int) (float64, error) {
+          if len(scores) == 0 {
+              return 0, errors.New("切片为空，无法计算平均值")
+          }
+          return 0, nil
+      }
+
+constraints:
+  timeout_seconds: 300
+  max_turns: 15
+
+expect:
+  must_not_contain:
+    - "比较两个候选"
+    - "许可证"
+    - "二次开发"
+
+judge:
+  type: rule_based
+  success:
+    - output_contains:
+        not: ["比较两个候选", "GitHub 仓库", "许可证", "二次开发"]

@@ -7,7 +7,7 @@
 | Skill | 用途 |
 |-------|------|
 | [`ko-bug`](skills/ko-bug/SKILL.md) | 证据优先的 Bug 诊断与修复协议：反馈循环 → 复现与最小化 → 可证伪假设 → 定向插桩 → 影响面/历史核查 → 分析确认门 → RED/GREEN → 验证交付 |
-| [`ko-github`](skills/ko-github/SKILL.md) | GitHub 复用方案评估：开发前比较现有项目、模板和库，再决定直接使用、二次开发或从零开发 |
+| [`ko-github`](skills/ko-github/SKILL.md) | 在开发较大功能前，查找并比较 GitHub 上可复用的项目、Starter、模板和库；基于证据决定直接使用、二次开发或从零开发 |
 
 ## 安装
 
@@ -19,6 +19,8 @@
 npx skills add kaluli123123/ko-skill@ko-bug
 npx skills add kaluli123123/ko-skill@ko-github
 ```
+
+准备开发较大功能、想避免重复造轮子时使用 `ko-github`。小型 Bug 修复、文案或 UI 微调、纯配置修改、简单的内部逻辑调整不需要使用它。
 
 加 `-g` 装成全局（对所有项目生效，而不只是当前这个），加 `-y` 跳过确认，或用 `-a <agent>`（比如 `-a claude-code -a codex`）指定具体装到哪几个 agent，而不是自动检测。完整选项跑 `npx skills --help`，每个支持的 agent 及其安装路径见 [`skills` CLI 的 README](https://github.com/vercel-labs/skills)。
 
@@ -41,6 +43,7 @@ and follow it for the rest of this conversation.
 skill-up validate skills/ko-bug/evals/eval.yaml
 skill-up run      skills/ko-bug/evals/eval.yaml              # 默认 claude_code 引擎，需要 ANTHROPIC_API_KEY
 skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
+skill-up validate skills/ko-github/evals/eval.yaml
 ```
 
 `ko-bug` 的三个用例分别锁住一处核心行为，并且各自使用一种被支持的语言：
@@ -55,6 +58,8 @@ skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
 
 运行产物落在 `skills/ko-bug-workspace/`（skill-up 会把它放在被测 Skill 的同级目录，已加入 `.gitignore`）。
 
+`ko-github` 也自带三个用例，覆盖较大功能的 GitHub 检索、小型修改的跳过条件，以及信息不足时的需求收集。
+
 ## 目录结构
 
 ```
@@ -65,6 +70,9 @@ skills/
   ko-github/
     SKILL.md
     agents/openai.yaml
+    evals/
+      eval.yaml
+      cases/*.yaml
     evals/
       eval.yaml
       cases/*.yaml

@@ -1,9 +1,9 @@
 ---
 name: ko-github
-description: 去github找轮子；当 `$build` 任务需要项目方案、架构、技术栈或实现策略建议时使用。
+description: Evaluates whether a new feature should reuse an existing GitHub project, starter, template, or library before implementation. Use when the user asks to find GitHub repositories, compare open-source options, choose between direct use, customization, and greenfield development, or says not to reinvent the wheel. Not for small bug fixes, copy or UI tweaks, configuration-only changes, or simple internal edits.
 ---
 
-# GitHub 复用方案评估
+# GitHub Reuse Strategy
 
 Help the user decide, validate, or improve how a project should be built. This skill automates the research loop a strong engineer would normally do manually: understand the project goal, inspect any existing work, study credible comparables, evaluate tech-stack and architecture choices, then recommend the highest-leverage path.
 
@@ -463,4 +463,3 @@ Cap high-priority items at five. Keep the report direct and useful; do not bury 
 - Make tradeoffs explicit: speed, complexity, cost, scale, hiring/community, portability, and maintenance.
 - Offer concrete next moves, not abstract advice.
 - Preserve the user's ambition. The point is to make the project easier to build well, not to make the user feel late to an invisible standard.
-
