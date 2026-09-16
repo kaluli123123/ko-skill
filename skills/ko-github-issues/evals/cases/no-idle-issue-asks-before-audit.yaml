@@ -1,0 +1,28 @@
+id: no-idle-issue-asks-before-audit
+title: "没有空闲 Issue 时先询问是否代码审计"
+description: |
+  默认 ask 策略必须在容量边界停下，只问一次是否允许代码审计，不能自行创建新 Issue。
+
+input:
+  prompt: |
+    使用 $ko-github-issues。你已经确认仓库所有开放 Issue 都已分配、被评论认领或已有开放 PR。
+    我没有指定 unavailable_issue_policy。现在继续处理。
+
+constraints:
+  timeout_seconds: 300
+  max_turns: 10
+
+expect:
+  must_contain:
+    - "审计"
+    - "授权"
+  must_not_contain:
+    - "已创建"
+    - "开始审计"
+
+judge:
+  type: rule_based
+  success:
+    - output_contains:
+        all: ["审计", "授权"]
+        not: ["已创建", "开始审计", "正在审计"]

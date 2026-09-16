@@ -1,0 +1,33 @@
+id: minimal-url-uses-safe-defaults
+title: "只有仓库 URL 时采用安全默认值"
+description: |
+  用户只提供一个仓库 URL 时，技能应默认交付一个真实 bug、一个 Issue 对应一个 PR，
+  并在写入前检查仓库规则、Issue 可用性和复现证据。
+
+input:
+  prompt: |
+    使用 $ko-github-issues 处理 https://github.com/example/project。
+    这是流程说明测试，不要实际访问网络或修改 GitHub；请说明你会如何开始以及默认值。
+
+constraints:
+  timeout_seconds: 300
+  max_turns: 10
+
+expect:
+  must_contain:
+    - "1"
+    - "Issue"
+    - "PR"
+  must_not_contain:
+    - "已合并"
+    - "已关闭 Issue"
+    - "已修改 GitHub"
+
+judge:
+  type: agent_judge
+  model: anthropic/claude-sonnet-4-6
+  criteria:
+    - "回答采用一个 bug、一个 Issue 对应一个 PR 的默认值"
+    - "回答在编辑或发布前检查仓库规则、Issue 是否被认领或已有 PR，以及缺陷能否复现"
+    - "回答没有声称已经访问网络、修改 GitHub、合并 PR 或关闭 Issue"
+  pass_threshold: 0.75

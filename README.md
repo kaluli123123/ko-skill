@@ -8,6 +8,7 @@ A set of standalone Agent Skills — plain instruction files any AI can use, not
 |-------|---------|
 | [`ko-bug`](skills/ko-bug/SKILL.md) | Evidence-first bug diagnosis and fix protocol: feedback loop → reproduce & minimize → falsifiable hypotheses → targeted instrumentation → impact/historical check → analysis confirmation gate → RED/GREEN → verified delivery |
 | [`ko-github`](skills/ko-github/SKILL.md) | Before building a substantial feature, find and compare reusable GitHub projects, starters, templates, and libraries; choose direct use, customization, or greenfield development with evidence |
+| [`ko-github-issues`](skills/ko-github-issues/SKILL.md) | Deliver one reproducible defect from a repository URL as one verified GitHub Issue and PR while avoiding claimed work and reporting incomplete gates |
 
 ## Install
 
@@ -18,9 +19,12 @@ This repo is discoverable by the community-maintained [`skills` CLI](https://git
 ```bash
 npx skills add kaluli123123/ko-skill@ko-bug
 npx skills add kaluli123123/ko-skill@ko-github
+npx skills add kaluli123123/ko-skill@ko-github-issues
 ```
 
 Use `ko-github` when you are about to build a substantial feature and want to avoid reinventing an existing open-source solution. It is not needed for small bug fixes, copy or UI tweaks, configuration-only changes, or simple internal edits.
+
+Use `ko-github-issues` when you explicitly want a reproducible bug delivered through an Issue and Pull Request. A repository URL is sufficient; it defaults to one bug and one PR per Issue. It is not a read-only status or PR-review workflow. See the [usage guide](skills/ko-github-issues/references/usage.md) for policy controls and examples.
 
 Add `-g` to install globally (all your projects) instead of just the current one, `-y` to skip confirmation prompts, or `-a <agent>` (e.g. `-a claude-code -a codex`) to target specific agents instead of auto-detecting. Run `npx skills --help` for the full option list, or see the [`skills` CLI README](https://github.com/vercel-labs/skills) for every supported agent and its install path.
 
@@ -33,6 +37,8 @@ Read https://raw.githubusercontent.com/kaluli123123/ko-skill/main/skills/ko-gith
 and follow it for the rest of this conversation.
 ```
 
+Replace `ko-github` with `ko-github-issues` in that URL to run the separate Issue-to-PR workflow.
+
 Works with bug descriptions in English, Chinese, Japanese, Korean, Spanish, French, or Portuguese, on any AI you give it to.
 
 ## Evals (skill-up)
@@ -44,6 +50,7 @@ skill-up validate skills/ko-bug/evals/eval.yaml
 skill-up run      skills/ko-bug/evals/eval.yaml              # default claude_code engine, needs ANTHROPIC_API_KEY
 skill-up run      skills/ko-bug/evals/eval.yaml --engine codex
 skill-up validate skills/ko-github/evals/eval.yaml
+skill-up validate skills/ko-github-issues/evals/eval.yaml
 ```
 
 `ko-bug`'s three cases each lock down one core behavior, one in each supported language:
@@ -60,6 +67,8 @@ Run artifacts land in `skills/ko-bug-workspace/` (skill-up places them next to t
 
 `ko-github` also includes three cases covering substantial-feature research, small-fix exclusions, and missing-context intake.
 
+`ko-github-issues` includes three cases covering URL-only defaults, the ask-before-audit capacity gate, and read-only status exclusion.
+
 ## Layout
 
 ```
@@ -73,6 +82,12 @@ skills/
       eval.yaml
       cases/*.yaml
       fixtures/scripts/   # script judge
+  ko-github-issues/
+    SKILL.md
+    references/usage.md
+    evals/
+      eval.yaml
+      cases/*.yaml
 ```
 
 The `skills/<name>/SKILL.md` layout matches what the `skills` CLI, Codex, Claude Code, and most other agents auto-discover — no vendor-specific manifest is required.
@@ -85,6 +100,7 @@ This repository also includes an optional Claude Code marketplace wrapper:
 /plugin marketplace add kaluli123123/ko-skill
 /plugin install ko-bug@ko-skill-marketplace
 /plugin install ko-github@ko-skill-marketplace
+/plugin install ko-github-issues@ko-skill-marketplace
 ```
 
 The core skills remain platform-neutral. The `.claude-plugin/` files only provide Claude Code distribution metadata.

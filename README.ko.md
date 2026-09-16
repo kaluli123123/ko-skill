@@ -8,12 +8,14 @@
 
 - [`ko-bug`](skills/ko-bug/SKILL.md): 증거 우선 버그 진단 및 수정 프로토콜
 - [`ko-github`](skills/ko-github/SKILL.md): 기능 개발 전에 재사용 가능한 GitHub 프로젝트와 라이브러리를 조사하는 프로토콜
+- [`ko-github-issues`](skills/ko-github-issues/SKILL.md): 재현 가능한 버그를 소유권 및 검증 게이트와 함께 GitHub Issue와 PR로 전달하는 프로토콜
 
 ## 설치
 
 ```bash
 npx skills add kaluli123123/ko-skill@ko-bug
 npx skills add kaluli123123/ko-skill@ko-github
+npx skills add kaluli123123/ko-skill@ko-github-issues
 ```
 
 `SKILL.md`는 일반 텍스트이므로 어떤 지침을 읽을 수 있는 AI에도 붙여 넣어 사용할 수 있습니다. 영어, 중국어, 일본어, 한국어, 스페인어, 프랑스어, 포르투갈어 입력을 지원하며 사용자의 언어로 답변합니다.
