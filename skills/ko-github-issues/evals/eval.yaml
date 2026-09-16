@@ -1,0 +1,26 @@
+schema_version: v1alpha1
+
+# ko-github-issues 评测套件（skill-up）
+# 运行：skill-up validate skills/ko-github-issues/evals/eval.yaml
+
+environment:
+  type: none
+
+skills:
+  - source: local_path
+    path: .
+
+engine:
+  name: claude_code
+
+cases:
+  files:
+    - evals/cases/minimal-url-uses-safe-defaults.yaml
+    - evals/cases/no-idle-issue-asks-before-audit.yaml
+    - evals/cases/read-only-status-does-not-trigger.yaml
+  defaults:
+    timeout_seconds: 900
+    max_turns: 30
+
+report:
+  formats: [json]

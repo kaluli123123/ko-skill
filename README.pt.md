@@ -8,12 +8,14 @@ Uma coleção de Agent Skills independentes e neutras em relação a fornecedore
 
 - [`ko-bug`](skills/ko-bug/SKILL.md): protocolo de diagnóstico e correção de bugs baseado em evidências
 - [`ko-github`](skills/ko-github/SKILL.md): pesquisa de projetos e bibliotecas reutilizáveis do GitHub antes de construir recursos importantes
+- [`ko-github-issues`](skills/ko-github-issues/SKILL.md): entrega de um bug reproduzível como Issue e PR do GitHub com controles de propriedade e verificação
 
 ## Instalação
 
 ```bash
 npx skills add kaluli123123/ko-skill@ko-bug
 npx skills add kaluli123123/ko-skill@ko-github
+npx skills add kaluli123123/ko-skill@ko-github-issues
 ```
 
 Cada `SKILL.md` é texto simples e pode ser usado com qualquer IA capaz de ler instruções. São aceitas entradas em inglês, chinês, japonês, coreano, espanhol, francês e português; responda no idioma do usuário.

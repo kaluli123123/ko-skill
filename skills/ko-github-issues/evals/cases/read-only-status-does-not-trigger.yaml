@@ -1,0 +1,25 @@
+id: read-only-status-does-not-trigger
+title: "只读状态查询不触发交付流程"
+description: |
+  查询现有 Issue 和 PR 状态时，不应提出创建分支、提交代码、发布 Issue 或更新台账。
+
+input:
+  prompt: |
+    查看 https://github.com/example/project 的 Issue #42 和关联 PR 当前是什么状态。
+    只读检查，不要修改任何内容。
+
+constraints:
+  timeout_seconds: 300
+  max_turns: 10
+
+expect:
+  must_not_contain:
+    - "创建分支"
+    - "提交修复"
+    - "更新台账"
+
+judge:
+  type: rule_based
+  success:
+    - output_contains:
+        not: ["创建分支", "提交修复", "更新台账", "创建 Issue", "打开 PR"]
