@@ -5,60 +5,46 @@ description: Delivers a verified GitHub Issue-to-PR bug fix from a repository UR
 
 # GitHub Issues Delivery
 
-Turn one verified defect into one traceable GitHub Issue and Pull Request without taking over claimed work or hiding verification gaps.
+Deliver one reproducible defect through a traceable Issue and PR, preserving ownership and verification gaps.
 
-## Critical Contract
+## Authority and Defaults
 
-1. External writes require an explicit request. Invoking `ko-github-issues` with a repository URL authorizes the default Issue-and-PR workflow; a read-only request does not.
-2. One repository URL is sufficient input. Default to one real bug, one Issue, and one PR.
-3. Read repository rules before editing or publishing anything.
-4. An open Issue is unavailable when it is assigned, claimed in comments, linked to an open PR, held by a maintainer, already solved, or not a reproducible defect.
-5. If no eligible Issue remains, ask once whether to audit the code for a new bug. Only a clear yes authorizes that audit and a new Issue.
-6. A Pull Request is not a merge. Do not merge, close Issues, deploy, or change repository settings unless separately requested.
+- Explicit invocation with a repository authorizes the default Issue-and-PR workflow. Reuse existing explicit authorization; never ask twice. A general review request authorizes neither edits nor execution of fixes.
+- Respect scope: **read-only** permits inspection; **ledger-only** permits the requested ledger update; **issue-only** permits requested Issue publication without implementation, commits, push, or PR; **full delivery** permits the authorized Issue-to-PR sequence. Never run later publication steps outside that scope.
+- Default to one bug and one PR per Issue. Ask for the repository only when absent.
+- External writes require explicit authorization. Preserve unresolved permission gates; a permission-blocked PR is partial delivery.
+- Never merge, close Issues, deploy, or change repository settings without separate authorization.
 
-## Inputs and Defaults
+| Input | Default / behavior |
+|---|---|
+| `repository` | Requested URL or `owner/repo` |
+| `bug_count` | `1` |
+| `one_issue_per_pr` | `true`; otherwise group only a shared root cause and verification boundary |
+| `unavailable_issue_policy` | `ask`; alternatives: `skip`, `stop`, explicitly authorized `takeover` |
+| `publish` | `issue-and-pr` for explicit full invocation; honor narrower requests |
+| `ledger_path` | Unset; update only a user- or repository-designated in-scope ledger |
 
-| Input | Default | Meaning |
-|---|---|---|
-| `repository` | URL or `owner/repo` from the request | Ask only when absent. |
-| `bug_count` | `1` | Number of complete bug deliveries. |
-| `one_issue_per_pr` | `true` | Separate branch, commit, and PR for each Issue. |
-| `unavailable_issue_policy` | `ask` | `ask`, `skip`, `stop`, or explicitly authorized `takeover`. |
-| `publish` | `issue-and-pr` | Use `issue-only` only when the user does not request a PR. |
-| `ledger_path` | unset | Update only when the user or repository rules identify an in-scope ledger. |
-
-Match the user's language for status reports. Use the target repository's required language for Issues, Pull Requests, comments, commits, and code comments; use English when no repository rule specifies a language.
+Match the user's language for status. Follow repository language requirements for Issues, PRs, comments, commits, and code comments; default to English. Use English claim comments. Use `gh` for GitHub operations and quote API URLs in shells.
 
 ## Workflow
 
-### 1. Resolve authority and repository state
+### 1. Verify access and rules
 
-State the repository, requested count, mapping mode, publication scope, and unavailable-Issue policy. Then verify:
+State repository, count, Issue-to-PR mapping, scope, and unavailable-Issue policy.
 
 ```bash
 gh auth status
 gh repo view OWNER/REPO --json nameWithOwner,defaultBranchRef,url,viewerPermission
 git status --short --branch
-```
-
-Do not guess the default branch, remote, fork, or write permission. Stop before editing if authentication or repository access fails.
-
-### 2. Read repository rules
-
-From the checkout, find the applicable instructions and templates:
-
-```bash
-rg --files -g 'AGENTS.md' -g 'CLAUDE.md' -g '.claude/rules/*.md' \
+rg --files --hidden -g '!.git/**' -g 'AGENTS.md' -g 'CLAUDE.md' -g '.claude/rules/**/*.md' \
   -g 'CONTRIBUTING*' -g 'README*' -g '.github/ISSUE_TEMPLATE/**' \
   -g '.github/pull_request_template*' -g 'Makefile' -g 'pyproject.toml' \
   -g 'package.json'
 ```
 
-Record branch conventions, Issue and PR templates, required checks, generated-file rules, forbidden paths, and publication requirements. Preserve dirty and untracked user work.
+Read applicable rules and templates before editing or publishing. Record branch conventions, checks, generated-file rules, forbidden paths, and publication requirements. Preserve dirty and untracked work. Verify default branch, remote, fork, and permissions rather than guessing; stop before edits if authentication or access fails.
 
-### 3. Screen live Issue capacity
-
-Read open Issues, open PRs, and the REST Issue inventory:
+### 2. Screen live Issues
 
 ```bash
 gh issue list -R OWNER/REPO --state open --limit 100 \
@@ -68,76 +54,47 @@ gh pr list -R OWNER/REPO --state open --limit 100 \
 gh api --paginate 'repos/OWNER/REPO/issues?state=open&per_page=100'
 ```
 
-For each candidate, inspect assignees, claim comments, linked PRs, maintainer holds, current code, and reproduction evidence. Recheck ownership immediately before publication because availability can change during implementation.
+The 100-row lists are previews. Exhaust relevant Issue and PR pagination before claiming complete coverage. Paginate candidate comments, linked-PR evidence, and any nested GraphQL comments or threads independently; outer pagination does not exhaust nested connections.
 
-Apply `unavailable_issue_policy`:
+Reject assigned, claimed, maintainer-held, already-solved, non-reproducible Issues or those linked to an open PR. Inspect current code and reproduction evidence; questions, features, and reproduction-help requests are not automatically defects.
 
-- `ask`: ask once whether to audit for a new unreported bug, then stop until the user answers.
-- `skip`: skip unavailable Issues and continue an already-authorized code audit.
+When no eligible Issue remains:
+
+- `ask`: request permission once to audit for a new bug; wait unless already explicitly authorized.
+- `skip`: skip unavailable work; audit only if already authorized.
 - `stop`: report `found/required` and stop.
-- `takeover`: proceed only when the user authorized takeover and the prior owner or maintainer clearly released the work.
+- `takeover`: require both explicit user authorization and clear release by the prior owner or maintainer.
 
-An unclaimed research question, feature request, or reproduction-help request is not automatically a bug.
+Recheck ownership immediately before publication. If ownership changes, stop publication, refresh comments and linked PRs, and apply the policy.
 
-### 4. Reproduce before publishing
+### 3. Reproduce and establish the Issue
 
-Establish a minimal failing case on the current default-branch head. Preserve:
+Demonstrate the defect on the current default-branch head. Retain exact SHA and environment, minimal reproduction, expected versus actual behavior, duplicate-search results, and evidence excluding configuration errors, unsupported use, or an existing fix. Without reproducible or falsifiable evidence, report the gap and do not publish.
 
-- the exact revision and environment;
-- the smallest reproduction command or test;
-- expected and actual behavior;
-- evidence that the failure is not configuration, unsupported use, or an existing fix;
-- duplicate-search results.
+For an authorized new Issue, follow the bug template and include reproduction evidence, impact, and environment. Redact secrets, credentials, private data, and sensitive provider payloads. Use `gh issue create`, save its number and URL, and create it before the implementation PR. Use `gh issue comment` for a narrow claim only when expected by the repository and authorized. Failed creation does not reserve work.
 
-If the defect cannot be reproduced or falsifiably demonstrated, do not create an Issue or PR. Report the missing evidence.
+Stop after the requested Issue action in issue-only mode.
 
-### 5. Create or claim the Issue
+### 4. Implement within scope
 
-For a new defect with no duplicate:
-
-1. Follow the repository's bug template.
-2. Include the revision, reproduction, actual result, expected result, impact, and environment.
-3. Remove secrets, private data, credentials, and sensitive provider payloads.
-4. Create the Issue before the implementation PR.
-5. Save its number and URL.
-6. Add a narrow English claim comment only when the repository expects claims.
-
-Use `gh issue create` and `gh issue comment` for GitHub writes. If Issue creation fails, do not describe the work as reserved.
-
-### 6. Implement one Issue at a time
-
-With `one_issue_per_pr=true`, preserve this mapping:
+For each Issue, use an independent `fix/<slug>-<N>` branch from the verified default-branch head:
 
 ```text
-Issue #N
-  -> independent fix/<slug>-<N> branch
-  -> regression test
-  -> minimal production fix
-  -> focused verification
-  -> one commit
-  -> one PR closing #N
-  -> one Issue reply
+Issue -> regression test -> minimal root-cause fix -> verification
+      -> one commit -> one PR closing #N -> Issue reply
 ```
 
-Create the branch from the verified default-branch head. Use an isolated worktree when the checkout is dirty or multiple fixes must coexist. Add the regression test first when a stable test seam exists, then implement the smallest root-cause fix using existing project patterns.
+Use an isolated worktree for dirty checkouts or coexisting fixes. Add the regression test first when a stable seam exists; reuse project patterns. Group Issues only under the configured shared-root-cause exception, referencing and replying to every covered Issue.
 
-If `one_issue_per_pr=false`, group Issues only when they share one root cause and one verification boundary. Reference and reply to every covered Issue.
+### 5. Verify and review
 
-### 7. Verify and review
+Run focused regression tests, required formatting/lint/targeted typechecks, then the repository-required full suite. Add runtime, CLI, API, browser, or device proof when needed. Obtain independent read-only review when available for security, persistence, concurrency, cancellation, or cross-provider changes.
 
-Run, in order:
+Record exact results without inventing evidence. Read complete failure logs and distinguish changed-code failures from baseline, optional-dependency, environment, CI, and policy failures. Publish with incomplete checks only when repository rules permit, documenting every gate.
 
-1. Focused regression test.
-2. Formatter, linter, and targeted typecheck required for changed files.
-3. Repository-required full suite.
-4. Runtime, CLI, API, browser, or device proof when the behavior requires it.
-5. Independent read-only review for security, persistence, concurrency, cancellation, or cross-provider changes when available.
+### 6. Commit and publish
 
-Record exact results. Separate changed-code failures from baseline, optional-dependency, environment, CI, and policy failures.
-
-### 8. Commit, push, and open the Pull Request
-
-Before Git writes, recheck:
+Before authorized Git writes, recheck HEAD, branch, index, task scope, and remote target/head SHA where applicable:
 
 ```bash
 git status --short --branch
@@ -147,83 +104,22 @@ git rev-parse HEAD
 git rev-parse origin/DEFAULT_BRANCH
 ```
 
-Stage only task-owned files. Use a concise imperative commit subject. If upstream push returns `403`, use the user's existing fork or create one with `gh repo fork`; never overwrite an unrelated remote branch.
+Substitute the verified remote/default branch. Stage only task-owned changes; use a concise imperative commit subject. On upstream `403`, use the user's existing fork or `gh repo fork` within authorization. Never overwrite unrelated branches, force-push upstream, or rewrite existing branches.
 
-The PR body must include Summary, root cause, changed behavior, Test plan, Issue reference, and incomplete gates. Report Draft, Ready, review, CI, and merge states separately.
+Open the PR with `gh pr create`. Include Summary, root cause, changed behavior, Test plan, Issue reference, and incomplete gates. Distinguish Draft/Ready, review, CI, and merge states.
 
-### 9. Reply and update any required ledger
+After the PR exists, reply using `gh issue comment` with its link, root cause, fix boundary, focused-test result, incomplete checks, and readiness.
 
-After the PR exists, reply to the Issue with the PR link, root cause, fix boundary, focused test result, incomplete checks, and current readiness.
+### 7. Update the ledger and report
 
-When a repository rule or the user identifies a ledger:
+For an in-scope ledger, read its structure, update exactly one row per PR, synchronize derived aggregate counts, verify each PR URL/title occurs once, and preserve unrelated edits. Ledger-only mode ends here without Issue or PR publication.
 
-- read its structure before editing;
-- add or update exactly one row for the PR;
-- synchronize aggregate counts derived from the file's current model;
-- verify the PR URL and title occur once;
-- preserve unrelated changes.
+Full delivery requires an existing Issue, committed fix and regression test, passing focused checks, an existing PR, Issue reply, and required ledger update. A blocked PR remains **partial**, even when its permission gate is documented. Assess narrower modes against their requested deliverables.
 
-### 10. Report completion
+Report Issue/PR URLs and state, commit, changed files, passed/failed/skipped checks, external gates, and whether merge or closure occurred. Do not claim completion from a preview or missing evidence.
 
-A delivery is complete only when the Issue exists, code and regression test are committed, focused checks pass, the PR exists or a permission gate is documented, the Issue is replied to, and any required ledger is updated.
+## Exclusions and Reference
 
-Report per Issue: Issue URL, PR URL and state, commit, changed files, passed checks, failed or skipped checks, external gates, and confirmation that merge and closure were not performed.
+Do not activate full delivery for status checks, PR reviews, merge-readiness audits, features, reuse research, bulk dependency updates, releases, deployments, merges, or closures. For questions, feature requests, or security reports, explain the scope mismatch; do not create a public bug Issue for private disclosure.
 
-## Common Failures
-
-### No eligible Issues remain
-
-Apply the configured policy. Under the default `ask` policy, ask whether to start a code audit and wait for a clear answer.
-
-### A selected Issue becomes claimed
-
-Stop publication, refresh comments and linked PRs, then apply `unavailable_issue_policy`. Stale ownership evidence never justifies a duplicate PR.
-
-### Upstream push returns 403
-
-Use a fork and a cross-fork PR. Do not force-push upstream or rewrite an existing branch.
-
-### Focused tests pass but the full suite fails
-
-Read the complete failure log and classify each failure. Publish only if repository rules allow it, and state the exact incomplete gate in the PR and final report.
-
-### The report is a question, feature request, or security issue
-
-Exit this workflow. Offer the appropriate research, feature, or private disclosure path without creating a public bug Issue.
-
-## Examples
-
-Minimal invocation:
-
-```text
-Use ko-github-issues for https://github.com/example/project.
-```
-
-This requests one verified bug delivery and uses the default `ask` policy.
-
-Explicit capacity and policy:
-
-```text
-Find two reproducible bugs in https://github.com/example/project. Use one Issue and PR per bug, skip claimed work, and reply to each Issue.
-```
-
-This uses `bug_count=2`, `one_issue_per_pr=true`, and `unavailable_issue_policy=skip`.
-
-Read-only request that must not activate the delivery workflow:
-
-```text
-Show me the current status of Issue #42 and its linked PR.
-```
-
-Use a read-only status workflow instead.
-
-## When Not to Use
-
-- Read-only Issue or PR status checks.
-- Existing PR review or merge-readiness audits.
-- Feature implementation without a reproducible defect.
-- GitHub project discovery or reuse research; use `ko-github` for that separate function.
-- Private security disclosure.
-- Bulk dependency updates, releases, deployments, merges, or Issue closures.
-
-For installation, invocation patterns, policy choices, and output examples, read [`references/usage.md`](references/usage.md).
+See [`references/usage.md`](references/usage.md) for installation, invocation, policies, and output examples.
