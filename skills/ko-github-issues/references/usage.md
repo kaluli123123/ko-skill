@@ -62,6 +62,8 @@ Fix Issues #12 and #18 in one PR only if they share the same root cause and regr
 
 Installing the skill does not authorize GitHub writes. Invoking `ko-github-issues` with a repository URL explicitly requests its default Issue-and-PR workflow; other requests must name the Issue, comment, branch, push, or Pull Request actions they need. The workflow never merges or closes the Issue by default.
 
+Reuse explicit authorization already provided for the same scope. An issue-only request ends after the requested Issue actions; it does not authorize implementation, commits, push, or a PR. Assess completion against the requested mode.
+
 Use a read-only request when publication is not wanted:
 
 ```text
@@ -108,6 +110,8 @@ The workflow stops publication for that Issue and refreshes its ownership state.
 ### Upstream push is forbidden
 
 The workflow uses the authenticated user's fork and opens a cross-fork PR. It does not force-push or overwrite an existing branch.
+
+If publication remains blocked and no PR exists, preserve local work and report partial delivery with the exact permission gate. Do not count it as a complete Issue-to-PR delivery.
 
 ### Full verification is not clean
 
