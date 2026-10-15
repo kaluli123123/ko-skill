@@ -1,0 +1,38 @@
+id: bounded-sql-plan
+title: 已知 schema 的支付问题提供可执行且有界的只读查询
+description: 执行模型给出的查询，验证租户、时间范围、成功状态和重复扣款边界。
+input:
+  prompt: |
+    使用 $ko-bug，分析支付重复扣款。只允许读取当前工作区文件；不允许运行命令、
+    修改文件、访问生产数据库或 GitHub。schema.sql 是已导出的真实 SQLite schema。
+    事故窗口是 2026-10-14T10:00:00Z（包含）到 2026-10-14T11:00:00Z（不包含），
+    本次只查 tenant_key=tenant-a。需要找出同一 order_ref 在窗口内出现多次 captured 的订单，
+    排除 declined 记录，返回 order_ref 和 capture_count，最多 50 行。
+    已确认大量用户无法避开重复扣款，核心支付流程受影响但没有证据表明全站不可用。
+    尚无本次事故的查询结果，也没有实际调用链证据。请提供诊断计划，不要宣布根因已确认。
+    最终回复使用一个 JSON 对象，字段如下，解释用中文：
+    sql: {status, query, parameters, next_action}, root_cause: {status, evidence},
+    priority: {level, reason}, repair_risk: {level, reason},
+    regression: [{tier, action, expected, status}], permissions: {production_edits}。
+    字段约定：status 使用 verified/pending/blocked/not applicable；root_cause.status
+    使用 confirmed/unconfirmed；priority.level 使用 P0/P1/P2/P3/unassessed；
+    repair_risk.level 使用 low/medium/high/unassessed；tier 使用
+    must-test/suggested/spot-check；production_edits 使用布尔值。
+context:
+  files:
+    "schema.sql": |
+      CREATE TABLE payment_attempts (
+        attempt_id TEXT PRIMARY KEY,
+        tenant_key TEXT NOT NULL,
+        order_ref TEXT NOT NULL,
+        outcome TEXT NOT NULL CHECK (outcome IN ('captured', 'declined')),
+        occurred_at TEXT NOT NULL
+      );
+      CREATE INDEX payment_window ON payment_attempts(tenant_key, occurred_at);
+constraints:
+  timeout_seconds: 300
+  max_turns: 12
+judge:
+  type: script
+  script_path: evals/fixtures/scripts/check-evidence.py
+  timeout_seconds: 30

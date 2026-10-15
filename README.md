@@ -53,17 +53,21 @@ skill-up validate skills/ko-github/evals/eval.yaml
 skill-up validate skills/ko-github-issues/evals/eval.yaml
 ```
 
-`ko-bug`'s three cases each lock down one core behavior, one in each supported language:
+`ko-bug` has five cases covering execution boundaries, missing evidence, and actionable data investigation:
 
 | Case | Language | Locks down |
 |------|----------|-------------|
 | `has-failing-test` | English | Reuses an existing failing test as the feedback loop; production code stays untouched before the analysis confirmation gate |
 | `no-seam-hitl` | Japanese (日本語) | A real-device flaky bug with no test seam runs a structured HITL loop, without fabricating evidence or bailing out unilaterally |
 | `should-not-trigger-feature` | Chinese (中文) | A plain feature request does not trigger the bugfix protocol |
+| `unverified-evidence` | Chinese (中文) | Missing evidence stays unconfirmed; historical similarity and human approval do not authorize fixes or establish causality |
+| `bounded-sql-plan` | Chinese (中文) | Executes proposed SQLite against tenant, time-boundary, and declined-payment counterexamples; proposed results stay pending |
 
-Each case's judge also asserts the response matches the expected language (script-level regex or an `agent_judge` criterion), so the suite doubles as a regression check for the Language Policy above.
+The original three cases also check response language. The two evidence-plan cases use a deterministic script judge, including real SQLite query execution rather than keyword-only SQL checks.
 
 Run artifacts land in `skills/ko-bug-workspace/` (skill-up places them next to the skill under test; already gitignored).
+
+Diagnosis records symptoms separately from hypotheses, tracks evidence/stage status, and maps affected modules before localization. Logging and SQL are conditional evidence channels, not mandatory steps. Regression rows carry runnable actions, expected observations, and status; incident priority (P0–P3) remains separate from repair risk.
 
 `ko-github` also includes three cases covering substantial-feature research, small-fix exclusions, and missing-context intake.
 

@@ -51,17 +51,21 @@ skill-up validate skills/ko-github/evals/eval.yaml
 skill-up validate skills/ko-github-issues/evals/eval.yaml
 ```
 
-`ko-bug` 的三个用例分别锁住一处核心行为，并且各自使用一种被支持的语言：
+`ko-bug` 的五个用例覆盖执行边界、缺失证据和可执行的数据排查：
 
 | 用例 | 语言 | 锁住什么 |
 |------|------|----------|
 | `has-failing-test` | 英文 | 已有 failing test 时复用为反馈循环；分析确认门前生产代码保持不变 |
 | `no-seam-hitl` | 日文（日本語） | 无测试 seam 的真机偶发 Bug 走结构化 HITL 循环，不编造证据、不擅自终止 |
 | `should-not-trigger-feature` | 中文 | 纯新功能请求不触发 Bug 修复协议 |
+| `unverified-evidence` | 中文 | 证据不足时保持未确认；历史相似和人工批准不能证明根因或授权修复 |
+| `bounded-sql-plan` | 中文 | 实际执行生成的 SQLite 查询，验证租户、时间边界和失败支付排除；计划中的查询仍标记待执行 |
 
-每个用例的 judge 还会校验响应语言是否匹配预期（script 级别的正则，或 `agent_judge` 判据），所以这套用例同时也是上面 Language Policy 的回归检查。
+原有三个用例还校验响应语言。新增两个证据计划用例使用确定性脚本评分，并实际执行 SQLite 查询，而不是只匹配 SQL 关键词。
 
 运行产物落在 `skills/ko-bug-workspace/`（skill-up 会把它放在被测 Skill 的同级目录，已加入 `.gitignore`）。
+
+分析先分离现象与假设，记录证据和阶段状态，并建立影响模块清单。日志与 SQL 按需使用，不要求每个 Bug 都查询。回归范围包含执行动作、预期结果和状态；故障优先级（P0–P3）与修复风险分别评估。
 
 `ko-github` 也自带三个用例，覆盖较大功能的 GitHub 检索、小型修改的跳过条件，以及信息不足时的需求收集。
 

@@ -21,6 +21,8 @@ cases:
     - evals/cases/has-failing-test.yaml
     - evals/cases/no-seam-hitl.yaml
     - evals/cases/should-not-trigger-feature.yaml
+    - evals/cases/unverified-evidence.yaml
+    - evals/cases/bounded-sql-plan.yaml
   defaults:
     timeout_seconds: 900
     max_turns: 30

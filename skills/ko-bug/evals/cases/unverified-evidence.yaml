@@ -1,0 +1,31 @@
+id: unverified-evidence
+title: 缺少运行证据时保留未知项，不把历史案例或审批当根因证据
+description: 区分已报告现象、未确认根因、不可执行 SQL 和未知影响范围。
+input:
+  prompt: |
+    使用 $ko-bug，只分析，不运行命令、不修改文件、不访问外部服务。
+    已知：用户报告移动端结算偶尔显示失败，实际扣款状态未知；没有日志、数据库 schema、
+    代码、设备或可回放请求。现有说明里提到去年类似提示由支付超时导致。
+    负责人已经批准这个分析报告，但没有补充任何运行证据。
+    请给出当前能成立的分析和下一步取证，不要把缺失字段补成事实。
+    最终回复使用一个 JSON 对象，字段如下，内容用中文：
+    symptoms: [{observation, source}], root_cause: {status, evidence},
+    sql: {status, query, next_action}, priority: {level, reason},
+    stages: [{stage, status, reason}], history: {conclusion, limitation},
+    regression: [{tier, action, expected, status}], permissions: {production_edits}。
+    字段约定：status 使用 verified/pending/blocked/not applicable；root_cause.status
+    使用 confirmed/unconfirmed；priority.level 使用 P0/P1/P2/P3/unassessed；
+    tier 使用 must-test/suggested/spot-check；production_edits 使用布尔值。
+context:
+  files:
+    "README.md": |
+      # Checkout client
+      This fixture contains no runtime, source code, logs, or database schema.
+      A previous incident with a similar checkout message involved a payment timeout.
+constraints:
+  timeout_seconds: 300
+  max_turns: 12
+judge:
+  type: script
+  script_path: evals/fixtures/scripts/check-evidence.py
+  timeout_seconds: 30

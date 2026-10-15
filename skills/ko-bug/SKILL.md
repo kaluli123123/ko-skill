@@ -5,195 +5,190 @@ description: Evidence-first bug diagnosis and fix protocol. Use it when the user
 
 # Evidence-first Bugfix
 
-This skill targets behavior that is already broken, across any language, framework, runtime, or system. It makes no assumption about the test framework, build tool, deployment shape, or client type in use; read the repo's rules, `CONTEXT.md` (if present), relevant ADRs, and project docs first, then pick commands that are actually real for the current project.
-
-It is a self-contained bugfix protocol: a tight feedback loop constrains diagnosis, minimization removes variables, falsifiable hypotheses prevent anchoring, RED→GREEN locks in the regression, end-to-end evidence proves the user's symptom is gone, and controlled permissions plus an archive keep the delivery traceable.
+Diagnose already-broken behavior through representative reproduction, minimization, falsifiable hypotheses, RED→GREEN, and end-to-end evidence. Read repository rules, `CONTEXT.md`, relevant ADRs, and project docs before choosing actual project commands; assume no particular language, framework, runtime, or deployment.
 
 ## Language Policy
 
-Default to English for every user-visible output this skill produces — reports, hypothesis lists, the analysis confirmation gate, HITL step tables, and any other natural-language text. Detection rules (highest priority first):
+Use the language explicitly requested in the current message; otherwise match its natural language among English, Chinese, Japanese, Korean, Spanish, French, and Portuguese. Default to English if unsupported or unclear.
 
-1. The user explicitly requests a language in the current message (e.g. "reply in Japanese" / "用中文回答") → follow that instruction.
-2. The natural language of the user's current message → match it among the supported languages: English, Chinese (中文), Japanese (日本語), Korean (한국어), Spanish (Español), French (Français), and Portuguese (Português).
-3. The message's language falls outside that set, or can't be determined → default to English.
-
-Regardless of the response language, technical identifiers stay in their original form and are never translated: file paths, commands, code, log/error text, stack traces, protocol fields, table/field/URL/ID literals, and the fixed markers this skill defines (`[DEBUG-<tag>]`, `ORIG_BRANCH`).
+Never translate technical identifiers: paths, commands, code, logs, stack traces, protocol fields, literal names/URLs/IDs, `[DEBUG-<tag>]`, or `ORIG_BRANCH`.
 
 ## Non-negotiable Rules
 
-1. **Feedback loop before theory**: there must be a fast signal that goes red against the user's exact symptom before entering the hypothesis or fix stage.
-2. **Reproduce, then minimize**: run the full-fidelity repro first, confirm it's the user-reported failure, then remove inputs, callers, config, data, and steps one at a time.
-3. **No evidence, no conclusion**: without logs, data, a call chain, or a reproducible signal, only record the gap; never invent table names, fields, paths, IDs, URLs, APIs, or environment facts.
-4. **Every hypothesis must be falsifiable**: write the prediction and the minimal verification action; change one variable at a time.
-5. **RED before the production fix**: see the failure first on the correct test seam (a test entry point that represents the real call chain), then fix the root cause, then see the same test pass. When there is no correct seam, let Stage 2's original feedback loop stand in for RED/GREEN, and note "no correct seam" in the report.
-6. **Fix the root cause, not the symptom**: the root cause must land on a specific `file:line`, function, branch, or config entry, with its causal chain explained.
-7. **Redact before you show anything**: tokens, passwords, cookies, user data, and signed URLs in logs, requests, HARs, traces, core dumps, or environment output must be replaced with `<REDACTED>`.
-8. **Evidence and permission are separate**: analysis, testing, and file edits are not Git/GitHub write authorization; `worktree add`, `add`, `commit`, `push`, `merge`, `checkout`, `stash`, etc. all require explicit authorization.
-9. **Stop after two failed fix attempts**: stop layering more patches, explain why the current hypothesis failed, and ask for new environment evidence; or stop this skill and ask the user to switch to a planning flow with a pre-approved task list. See Stage 7 for how "one attempt" is counted.
+- **Evidence before theory:** establish a fast signal asserting the exact symptom, reproduce at full fidelity, then minimize one variable at a time. Without evidence, record gaps rather than inventing facts, identifiers, or conclusions.
+- **Observation is not explanation:** separate user-reported symptoms, agent-observed results, hypotheses, and confirmed conclusions. Cite evidence for each; a historical match or absent log entry alone does not prove a cause. Logs are optional evidence, not a prerequisite when a representative reproduction, trace, debugger, or measurement establishes causality.
+- **Falsifiable hypotheses:** specify predictions and minimal verification actions. Locate the causal mechanism at a specific `file:line`, function, branch, or equivalent config/data/protocol boundary.
+- **Representative RED→GREEN:** observe the target failure before the production fix, then pass the same test. If no correct seam represents the real call chain, use Stage 2's original loop and report “no correct seam.”
+- **Redact before display:** replace credentials, cookies, user data, and signed URLs with `<REDACTED>` in logs, requests, HARs, traces, dumps, and environment output.
+- **Permission is separate from evidence:** a general review request authorizes neither execution nor edits. Respect read-only scope. Git writes—including `worktree add`, `add`, `commit`, `push`, `merge`, `checkout`, and `stash`—require explicit authorization; testing or editing permission does not supply it. Reuse explicit existing authorization for its covered action; never require it twice.
+- **Two failed fixes maximum:** count attempts as defined in Stage 7, then stop patching and request new evidence or a planning flow with a pre-approved task list.
 
-## Stage 0: Read the Rules and Confirm Boundaries
+## Stage Progress
 
-Check the current branch, working tree, repo-root rules, and any more specific directory rules first. Preserve the user's existing changes — no reset, no cleanup, no overwrite. Read `CONTEXT.md` and relevant ADRs if present, and build a model of module boundaries and constraints.
+Follow the stage dependencies, not a checklist of tools. Reuse recorded evidence rather than repeating a completed step. Mark each applicable stage `verified`, `pending`, `blocked`, or `not applicable`, with its result/evidence or reason. A proposed command is `pending`, not an executed result; an unavailable source is `blocked`, not “no hit.”
 
-Identify the project's real entry points and verification commands: test runner, build command, static analysis, service startup, CLI, browser/device install, database or protocol checks. Never carry over commands from a different project.
+Finish the currently known symptom inventory before hypotheses; update it when new observations arrive. Conditional logging, SQL, and history sources may be not applicable with a reason. Missing evidence blocks only conclusions that depend on it: continue independent authorized investigation, and apply the existing stop conditions when their criteria are met. For read-only analysis, report unmet execution gates without pretending they passed or treating a repair as authorized.
 
-If the repo already has its own bugfix, issue-closeout, or defect-archive flow (stated explicitly in a rules file, or backed by a matching command/skill), defer to it; this skill then only fills the diagnostic stages it's missing (Stages 1–5), and does not duplicate the confirmation gate, worktree, or archiving.
+## Stage 0: Rules and Boundaries
+
+Check branch, working tree, root and directory rules, `CONTEXT.md`, relevant ADRs, and module constraints. Preserve existing user changes: no reset, cleanup, or overwrite.
+
+Identify real test, build, static-check, startup, CLI, browser/device, database, and protocol entry points. Never borrow commands from another project.
+
+If explicit repository rules or a matching command/skill define a bugfix, issue-closeout, or archive flow, defer to it. Supply only missing diagnostic stages (1–5), without duplicating its confirmation gate, worktree, or archive.
 
 ### Global Stop Conditions
 
-Any of the following, confirmed at any stage, stops this skill immediately: output the evidence gathered so far and ask the user to switch to a planning flow with a pre-approved task list.
+Stop, report evidence, and request a planning flow with a pre-approved task list when:
 
-- The fix needs an architecture redesign, a storage/protocol swap, or a new public API;
-- Multiple independent components each need distinct non-trivial logic;
-- The root cause can't be pinned to `file:line` or an equivalent config/data boundary (still true at the end of Stage 5);
-- A feedback loop representative of the user's symptom can't be established (still true after trying the "when a loop can't be established" flow at the end of Stage 2);
-- After the root cause is located, a quick diff sketch estimates the fix at clearly more than ~150 lines, or it needs a new module, a new public data structure, or a migration (don't guess this at Stage 0).
+- Architecture redesign, a storage/protocol swap, or a new public API is required;
+- Multiple independent components need distinct non-trivial logic;
+- Root cause remains unlocalized at the end of Stage 5;
+- No representative loop can be established after Stage 2's fallback;
+- After localization, a quick diff sketch indicates clearly more than ~150 lines, a new module/public data structure, or a migration. Do not guess this at intake.
 
-## Stage 1: Structured Intake and Evidence Redaction
+## Stage 1: Intake
 
-Organize without speculating: source, version, platform/runtime, preconditions, repro steps, expected behavior, actual behavior, frequency, the raw error text, logs, and attachments. Keep only the lines that support a judgment in the output, and redact before quoting.
+Record a short title, source, version, platform/runtime, preconditions, reproduction steps, expected/actual behavior, frequency, first/last occurrence, recent relevant changes, raw errors, logs, and attachments where available. Show only relevant redacted evidence. Retrieve material gaps from authorized files/tools first; ask only for information that remains unavailable and affects diagnosis.
 
-If the intake is missing key conditions, list the gaps and the material you need from the user. Don't fill gaps with guesses.
+Before choosing the loop, separate:
 
-## Stage 2: Establish a Tight Feedback Loop
+- **Symptoms:** observable failures only, each with its source, affected conditions, and expected/actual result. Label user-reported versus independently observed facts; keep explanations in Stage 4.
+- **Initial impact map:** affected entry points, modules/services, platforms/versions, and data boundaries, linked to evidence. Mark suspected dependencies as hypotheses and unknown reach as unknown; refine this map after localization.
 
-The feedback loop is the core of the whole diagnosis. Pick the signal closest to the real entry point that the current system can support, in this priority order:
+Intake is sufficient when the known symptoms are recorded and remaining material gaps are explicit, not when every optional field is filled.
 
-1. A failing test that reaches the bug: unit, integration, or E2E;
-2. An HTTP/API script against a running service;
-3. A CLI invocation with a fixture, compared against a known-good output;
-4. Browser or desktop automation asserting visible results, console, network, or process state;
-5. A redacted replay of a real request, event, log, or trace;
-6. A throwaway harness that starts only the necessary dependencies;
-7. A property/fuzz/stress loop;
-8. A bisect/differential loop over known-good/known-bad versions, configs, or datasets (if it involves `git bisect`/`checkout` switches, get authorization under Rule 8 first, and confirm the working tree is clean or already saved by the user);
-9. When manual operation is unavoidable, use a structured HITL (human-in-the-loop) cycle: the agent designs a step table first and hands it to the user to execute — each round spells out the action, the expected observation, which actual-observation fields need to be recorded, and how many rounds to run (sized to the reported frequency; e.g. "one or two times in ten" calls for at least 10–20 rounds). The agent records the results once the user fills them in. HITL is a legitimate loop — when there's no automated entry point, design the HITL step table first; don't jump straight to "a loop can't be established."
+## Stage 2: Tight Feedback Loop
 
-Tighten the loop: shorten startup time, assert the specific symptom rather than "it didn't crash," pin time/random seed/filesystem/network, and cache irrelevant setup. For flaky bugs, raise the reproduction rate via repetition, parallelism, stress, timing control, or fixed randomness, and record the frequency and run count. For performance issues, use benchmark measurements, a profiler, a query plan, or a timing harness — don't substitute a pile of logs for measurement.
+Choose the closest supported signal to the real entry point, in order:
 
-Permission tiers for new files: anything placed in a test directory, a scratch directory, or a temporary harness location, and that doesn't touch production code, can be written and run directly. Anything that needs temporary instrumentation in production code requires a one-line statement of where and why before you touch it, and the user's confirmation (this is the lightweight instrumentation confirmation, not the full confirmation gate). Existing commands, tests, and logs can be run read-only.
+1. Failing unit, integration, or E2E test reaching the bug;
+2. HTTP/API script against a running service;
+3. CLI fixture compared with known-good output;
+4. Browser/desktop automation asserting visible, console, network, or process state;
+5. Redacted replay of a real request, event, log, or trace;
+6. Throwaway harness with only necessary dependencies;
+7. Property/fuzz/stress loop;
+8. Differential/bisect loop over known-good/bad versions, configurations, or data. Git switches require explicit authorization and a clean tree or changes already saved by the user;
+9. Structured HITL when manual operation is unavoidable.
 
-### Completion Criteria
+For HITL, deliver a table specifying each action, expected observation, actual-observation fields, and round count. Size repetitions to reported frequency: one or two failures in ten calls for at least 10–20 rounds. Record returned results. Design this table before declaring automation unavailable means no loop.
 
-Stage 2 is complete only when all of the following hold:
+Shorten startup, assert the specific symptom, control time/randomness/filesystem/network, and cache irrelevant setup. For flakes, increase reproduction through repetition, parallelism, stress, timing control, or fixed randomness; record frequency and run count. For performance regressions, use benchmark measurements, profiling, query plans, or a timing harness—not logs alone.
 
-- A command has actually been run and its redacted output kept (HITL loops are the exception: the step table having been delivered and awaiting the user's fill-in counts);
-- It reaches the real bug path and asserts the user's exact symptom;
-- It goes red against this bug specifically, not just "no error was thrown";
-- It's fast enough, repeatable, and can run unattended by the agent; HITL loops are the exception, but each round's manual steps, observations, and count must be recorded;
-- For flaky bugs, the reproduction rate has been raised to a diagnosable level via the means above, with frequency and run count recorded.
+Within authorized diagnostic execution/edit scope, non-production test/scratch/temporary harnesses may be written and run directly. Existing commands, tests, and logs may be used read-only within scope. Before temporary production instrumentation, state where and why and obtain confirmation unless that instrumentation is already explicitly authorized.
 
-If a loop can't be established (not even a HITL step table can be designed), stop, list what's been tried, and ask the user to provide a reproducible environment, a redacted artifact, or explicit authorization for temporary instrumentation; don't go straight to hypotheses. In HITL scenarios, hypotheses may be listed up front, but each one's "prediction/verification" must land on a field the step table asks the user to observe, to be judged once it's filled in.
+### Completion and Fallback
+
+Require an actually executed command with retained redacted output, reaching the real path and failing for the exact symptom. The loop must be repeatable, sufficiently fast, and unattended; flaky reproduction must distinguish hypotheses, with counts recorded.
+
+HITL is the exception: a delivered table awaiting results can advance provisionally. Hypotheses may be listed, but predictions and verification must map to table fields; pending observations are not evidence of RED.
+
+If no loop or HITL table can be established, list attempts and request a reproducible environment, redacted artifact, or missing instrumentation authorization. Do not proceed to hypotheses. If the representative loop remains impossible, apply the global stop condition.
 
 ## Stage 3: Reproduce and Minimize
 
-Run the feedback loop and confirm the failure mode is the one the user described, not a neighboring failure. Save the error message, error output, wrong result, or performance numbers.
+Run the full-fidelity loop and verify the user's failure rather than a neighboring error. Retain the error, wrong result, or performance measurements.
 
-Once the loop is red, remove inputs, callers, config, data, and steps one item at a time, rerunning after each removal. Done when everything left is load-bearing — removing any one of them turns it green. The minimal repro should become the material for the later regression test.
+After RED, remove inputs, callers, configuration, data, and steps one at a time, rerunning each time. Stop when each remaining element is load-bearing: removing it makes the reproduction green. Use this minimal case for regression coverage.
 
-Non-deterministic issues don't need to fail every time; the reproduction rate and run count keep updating per Stage 2's record, and reaching a level that can discriminate between hypotheses is enough.
+For nondeterministic failures, maintain frequency/run counts; reliable discrimination between hypotheses is sufficient.
 
-## Stage 4: Form and Vet Hypotheses
+## Stage 4: Ranked Hypotheses
 
-Before testing any hypothesis, list 3–5 ranked candidate causes. Use this format for each:
+Before testing, show up to five evidence-supported ranked candidates; do not invent extra causes to fill a quota:
 
 ```text
 Hypothesis: <specific mechanism>
-Evidence: <existing facts that support or argue against it>
-Prediction: if it holds, running <verification action> should show <result>
-Verification: <the smallest action that changes exactly one variable>
+Evidence: <supporting and contradicting facts>
+Prediction: if true, <verification action> should show <result>
+Verification: <smallest action changing one variable>
 ```
 
-Show the hypothesis list to the user and let them add domain knowledge. This checkpoint doesn't block: proceed to Stage 5 if there's no reply; it also doesn't replace the pre-implementation analysis confirmation gate.
+Invite domain knowledge without blocking progress to Stage 5. This checkpoint does not replace analysis confirmation.
 
-## Stage 5: Targeted Instrumentation and Root-Cause Localization
+## Stage 5: Instrument and Localize
 
-Every probe must correspond to one hypothesis's prediction. Prefer a debugger/REPL; failing that, add minimal logging at inputs, outputs, and cross-layer boundaries. Never "print everywhere and grep." Probes inside a test/scratch directory can be written directly; temporary instrumentation in production code follows the lightweight instrumentation confirmation from Stage 2.
+Tie every probe to a prediction. Prefer debugger/REPL, then minimal input/output or cross-layer logging; never print everywhere. Test/scratch probes follow diagnostic scope; production probes follow Stage 2's instrumentation gate.
 
-Temporary logs use one unique marker per round, `[DEBUG-<short-tag>]` (cleaned up by that prefix in Stage 8), and must never contain unredacted credentials or user content. Use a measurement tool for performance issues. Change one variable at a time, and record whether each probe strengthened or weakened a hypothesis.
+Assign temporary logs a unique `[DEBUG-<short-tag>]` per round, record markers for cleanup, and exclude unredacted secrets or user content. Use measurement tools for performance. Change one variable and record whether each result strengthens or weakens a hypothesis.
 
-Stage 5's completion bar: the root cause is pinned to a specific location in source, config, data, or a protocol boundary, and the feedback loop can explain "why this location produces the user's symptom." If still uncertain, go back to Stage 4 to re-rank hypotheses, or request new instrumentation/environment evidence; if still unable to localize it, stop per the Global Stop Conditions. Never write the top-ranked hypothesis down as fact.
+### Conditional Evidence Plan
 
-## Stage 5b: Impact Surface and Historical Check
+Use only evidence channels relevant to a prediction; do not force logs or SQL into every bug. For each proposed probe, record the hypothesis, discovered source, exact command or capture action, bounded scope, predicted observation, and execution/result status.
 
-Complete this after the root cause is located and before the confirmation gate, to produce items 6–9 of the confirmation-gate report:
+- **Logs/traces:** discover configured sinks, paths, event names, and available correlation fields first. Filter by the incident time window and known request/session identifier, retaining relevant lines around the failure. Do not invent a log path or treat missing logging as proof that an operation never ran.
+- **Data/SQL:** apply only when persistence or data consistency is on the causal path. Inspect the actual schema, dialect, and access constraints before writing queries; use known identifiers and parameters, explicit columns, and bounded time/key ranges and row limits. Check expected invariants or compare relevant records, not arbitrary table samples. Prefer a local snapshot or approved read-only connection; even a read-only production query needs authorization and a bounded cost. No writes, locking reads, mutating functions, or expensive query-plan execution as diagnostic shortcuts.
+- **Unknown sources:** when logs, schema, or access are unavailable, state exactly what is missing and provide a discovery/capture step. Label any placeholder query as a non-executable template; never present fabricated identifiers as runnable SQL. A proposed probe remains pending until its output is observed.
 
-1. **Historical changes**: run `git log -L <start-line>,<end-line>:<file>` on the root-cause location (or `git blame` + `git log -S<keyword>`), and record the most recent 1–3 relevant commits/PRs/issues; write "no history" if the repo isn't git.
-2. **Similar bugs**: search the repo's defect archive (e.g. `docs/bugs/`), issue tracker, and CHANGELOG once each with the raw error keywords and the module name; record hits, or "no hit (searched X/Y/Z)".
-3. **Regression scope**: direct callers of the root-cause function/config → must-test; other entry points in the same module → suggested test; indirect dependents → spot-check; tests attached to a matching historical commit → must-test.
-4. **Risk level**: internal logic only, no persistence = low; public interface, persistence, or protocol = medium; concurrency, migration, security, or payments = high.
-5. **Options compared**: write at least one line each for "minimal fix" and one alternative; if there's only one option, write "no alternative, because: …".
-6. **Investigation suggestions**: for evidence gaps still open, list logging/query/capture commands the user can run; write "none" if there are no gaps.
+Complete only with a specific source/config/data/protocol location and an evidenced causal chain explaining the symptom. Re-rank or request evidence if uncertain; apply the global stop condition if localization remains impossible. Never promote the leading hypothesis to fact without proof.
 
-## Analysis Confirmation Gate (sent once, before Stage 6)
+## Stage 5b: History and Impact
 
-Output this and wait for explicit confirmation before the production fix and any Git write operation. The lightweight confirmations for test/scratch harnesses (Stage 2) and production instrumentation (Stage 5) were already handled inline and are not repeated here. The report always includes:
+Before analysis confirmation:
 
-1. Structured intake and redacted evidence;
-2. The feedback loop that goes red, its commands, and the actual results;
-3. Minimal repro and reproduction rate;
-4. 3–5 ranked hypotheses, predictions, and verification results;
-5. Root-cause location and call chain;
-6. Investigation suggestions for open evidence gaps (Stage 5b);
-7. Historical changes and related past bugs (Stage 5b);
-8. Must-test / suggested / spot-check regression scope (Stage 5b);
-9. Risk level, change scope, and compared options (Stage 5b);
-10. Open evidence, permission needs, and any conditions still to be met before implementation (pending confirmations, pending authorizations, material still needed from the user).
+- **History:** run `git log -L <start-line>,<end-line>:<file>` or `git blame` plus `git log -S<keyword>`. Record the most recent 1–3 relevant commits/PRs/issues; write “no history” for a non-Git repository.
+- **Related bugs:** search available defect archives (such as `docs/bugs/`), issue trackers, and CHANGELOG using raw error keywords and module name. Record sources, terms, hits, and coverage limits; distinguish “no hit” from an unavailable or unsearched source. A historical match suggests a hypothesis or regression case, not proof of today's root cause.
+- **Regression scope:** refine the impact map into must-test / suggested / spot-check rows. Each row names the entry point/platform/data boundary, why it is affected, concrete command or manual steps, expected observable result, and execution status. Must-test covers the original unminimized symptom, the causal boundary and its failure/success cases, direct callers, and relevant tests from matching historical changes. Other module entry points are suggested; indirect dependents receive spot-checks. Promote either tier to must-test when shared state, contracts, persistence, concurrency, or security make it part of the causal path.
+- **Repair risk/options:** assess change risk separately from incident priority: internal logic without persistence is usually low; public interfaces, persistence, or protocols are at least medium; concurrency, migrations, security, or payments require high-risk review. State scope and evidence gaps rather than automatically calling an unlocalized fix low-risk. Compare the minimal fix with an alternative, or state “no alternative, because: …”.
+- **Incident priority:** use the repository's P0–P3 rubric if present. Otherwise use provisional defaults: P0 = ongoing widespread outage, irreversible data loss, or active severe security exposure; P1 = a core flow blocked for a significant group without a viable workaround; P2 = limited degradation with a viable workaround; P3 = minor impact with core flows intact. Give impact, reach, frequency, workaround, and confidence as evidence. Unknown impact means “unassessed” or an explicitly conditional rating, not an invented P-level. Assess urgent incidents at intake; refine with evidence instead of waiting until this stage.
+- **Remaining investigation:** reference the pending/blocked probes from Stage 5's evidence plan, or “none.”
+
+For GitHub history or issue lookup, use `gh`, quote API URLs in shells, and exhaust pagination—including nested GraphQL comments/threads—before claiming complete coverage. A 100-row list is a preview. Lookup does not authorize publication.
+
+## Analysis Confirmation Gate
+
+Before Stage 6, send the analysis report once. Wait for explicit implementation confirmation unless existing explicit authorization already covers the proposed fix and scope. Do not repeat covered permissions or the instrumentation gate; identify genuine unresolved permissions separately. Analysis confirmation does not implicitly authorize Git writes.
+
+Include:
+
+1. Title/intake, symptom inventory and impact map, redacted evidence, actual RED commands/results, minimal reproduction, frequency and run count;
+2. Ranked hypotheses, predictions, verification results, root-cause location and call chain, or an explicit unconfirmed status;
+3. Pending/blocked evidence probes, historical changes, related bugs, and source coverage;
+4. Actionable must-test/suggested/spot-check rows, incident priority and rationale, separate repair risk, proposed changes, and compared options;
+5. Unresolved evidence, permission needs, stage statuses, and conditions required before implementation.
+
+Use this as one evolving report, not a second copy of the investigation. For analysis-only or blocked delivery, keep pending observations and unverified regression rows visible; report a confirmed root cause only when Stage 5's causal evidence exists. Human review may validate evidence, resolve disputed impact, or grant permission, but approval alone cannot turn a hypothesis or unexecuted check into proof.
 
 ## Stage 6: Isolation and RED
 
-Once the user has confirmed the plan, create an isolated worktree only if Git write authorization has been granted; record `ORIG_BRANCH` and the worktree path. Without authorization, never run `git worktree add` — edit in the current checkout per the user's choice, or pause and wait for authorization.
+After implementation is authorized, create an isolated worktree only with explicit Git-write authorization; record `ORIG_BRANCH` and its path. Otherwise use the current checkout if the user's authorized choice permits it, or pause for the missing authorization.
 
-If Stage 2's loop is already a failing test on the correct seam, reuse it directly as the regression test and skip items 1–3 below. Otherwise, turn the minimal repro into a regression test on a correct test seam that represents the real call chain:
+Reuse Stage 2's failing test if it represents the real call chain. Otherwise convert the minimal reproduction into a regression test:
 
-1. Prefer extending an existing test that already covers the same public entry point;
-2. Test user-observable behavior, not "the mock got called";
-3. If a shallow seam can't reproduce the real call chain, record "missing correct seam" and let Stage 2's original feedback loop stand in for RED/GREEN (Rule 5) — don't manufacture a false sense of safety;
-4. Run the test and confirm it fails for the target symptom;
-5. RED is not an import error, a fixture error, or an environment error.
+1. Prefer extending coverage of the same public entry point.
+2. Assert user-observable behavior, not mock invocation.
+3. If no correct seam reproduces the call chain, report “no correct seam” and retain the original loop for RED/GREEN.
+4. Run and observe the target failure before changing production code. Import, fixture, and environment failures do not count as RED.
 
-## Stage 7: Root-Cause Fix and GREEN
+## Stage 7: Minimal Fix and GREEN
 
-Change only the minimal area where the root cause lives. Restore the original, unminimized scenario, get the regression test to GREEN first, then rerun Stage 2's original feedback loop and confirm the user's symptom is gone.
+Change only the root-cause area. Get the regression test GREEN, restore the original unminimized scenario, and rerun Stage 2's loop to verify the symptom is gone.
 
-If GREEN isn't reached, or the original loop still reproduces the bug, that counts as one failed attempt: go back to Stage 4 to re-rank hypotheses; before the second attempt, just report the delta to the user rather than the full report again; two failed attempts means stop per Rule 9.
+Failure to reach GREEN, or continued failure of the original loop, counts as one failed fix attempt. Re-rank hypotheses in Stage 4; before attempt two, report only the analysis delta and resolve any newly required permission. After two failed attempts, stop patching, explain the failed hypothesis, and request new environment evidence or a planning flow with a pre-approved task list.
 
-Run whatever static analysis, build, contract check, database check, native-platform check, or device verification fits the stack identified in Stage 0. Don't default to assuming any particular language, framework, package manager, database, or client tool.
+Run applicable static, build, contract, database, native-platform, and device checks identified from the actual project.
 
-## Stage 8: Cleanup, Verification, and Delivery
+## Stage 8: Cleanup and Delivery
 
 Before claiming completion:
 
-- The original feedback loop no longer reproduces the bug;
-- The regression test passes; any missing-correct-seam limitation is recorded;
-- Every `[DEBUG-<short-tag>]` temporary probe has been removed (check off each marker recorded in Stage 5);
-- Any throwaway harness/prototype has been deleted or moved to a clearly labeled debug location;
-- The project's real full test suite, static checks, and any necessary end-to-end entry points have been run;
-- Tests attached to a historical commit hit in Stage 5b are run separately and their result reported; write "historical check: no hit" if there was none;
-- `git diff --check` passes;
-- The actual commands, exit codes, pass/fail counts, and anything unverified are reported;
-- The finally-confirmed root cause is written into the commit/PR description or a bug archive.
+- Verify the original loop and regression test pass; disclose missing-seam limitations.
+- Remove every recorded `[DEBUG-<short-tag>]` probe. Delete skill-created throwaway harnesses or move them to a clearly labeled debug location; preserve unrelated user work.
+- Run the project's full test suite, static checks, and necessary E2E entry points. Separately run/report tests from matching historical commits, or write “historical check: no hit.” Require `git diff --check` to pass.
+- Report actual commands, exit codes, pass/fail counts, and unverified coverage. Record the confirmed root cause in an authorized commit/PR description or bug archive.
+- If rules mandate an archive or a defect-archive directory already exists, archive even without a linked issue, within authorized edit scope. Include symptom, root cause, fix, changed files, history, RED/GREEN, regression scope, and uncovered areas. Otherwise report “no archive directory.”
 
-Project fit comes from "read the rules, then pick commands": mobile, desktop, server, CLI, browser, data-pipeline, and hardware systems each only run the verification layers that actually exist for them. If the repo mandates `docs/bugs/` or another defect-archive directory (stated explicitly in a rules file, or the directory already exists), archive regardless of whether an issue is linked, with at minimum the symptom, root cause, fix, changed files, historical check, RED/GREEN, regression scope, and anything not covered; if neither condition holds, write "no archive directory" in the report.
+Use only verification layers that exist for the project. Missing required verification or authorization remains open; do not invent completion.
 
-Only commit, write back to the issue, merge back into `ORIG_BRANCH`, delete the worktree, or push once the user has explicitly authorized it. Close out using the repo's existing issue/commit/merge flow; if there's no authorization, state clearly "no Git write operations were performed."
+Commit, issue writeback, merge into `ORIG_BRANCH`, worktree deletion, and push each require explicit authorization covering that action. Reuse existing authorization without asking twice; follow the repository's closeout flow. For GitHub writes, use `gh` and English publication text unless explicitly directed otherwise. A requested issue-only or other limited delivery does not authorize later publication steps. A permission-blocked requested PR is partial delivery. Never merge without explicit authorization.
 
-## Trigger Examples
+If no Git writes occurred, state “no Git write operations were performed.”
 
-Use this skill for:
+## Scope Examples
 
-- "This test is failing — build a stable minimal repro first, then fix it."
-- "This endpoint occasionally returns a wrong result — diagnose it and add a regression check."
-- "Performance has degraded recently — find the root cause from evidence, don't just guess it's the database."
-- "Fix this cross-service/cross-platform bug and keep historical and E2E evidence."
-- 「テストが落ちる。まず安定して再現する最小ケースを作ってから直して。」
-- 「このエンドポイントがたまに間違った結果を返す。証拠ベースで原因を特定して直して。」
-- “最近性能变差了，按证据找根因，不要直接猜是数据库。”
-- “修复这个跨服务/跨平台 Bug，并保留历史和 E2E 证据。”
+Use for failing tests, crashes, wrong results, flaky endpoints, and performance regressions requiring evidence, minimal reproduction, root-cause repair, and historical/E2E verification—including reports in Chinese or Japanese.
 
-Don't use this skill for:
+For log-reading or review-only requests, use only the authorized read-only subset of Stages 0–5; do not execute, edit, or enter Stage 6 without appropriate authorization.
 
-- A new feature, UX polish, or tuning already-correct behavior for performance: don't use this skill.
-- Log-reading only, no file edits allowed: run only the read-only subset of Stages 0–5, and don't enter Stage 6.
-- An architecture migration, a rework of multiple independent components, or work that needs a pre-approved task list: don't use this skill — switch to a planning flow with a pre-approved task list instead.
-- A verified fix that just needs to be committed/written back to an issue: close it out via the repo's existing commit and issue flow; don't use this skill.
+Do not use for new features, UX polish, tuning correct behavior, architectural migrations, or independent multi-component rework. Use a planning flow for work needing a pre-approved task list. A verified fix needing only commit/issue closeout belongs to the repository's existing closeout flow.
