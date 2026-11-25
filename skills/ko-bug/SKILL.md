@@ -20,6 +20,7 @@ Never translate technical identifiers: paths, commands, code, logs, stack traces
 - **Representative RED→GREEN:** observe the target failure before the production fix, then pass the same test. If no correct seam represents the real call chain, use Stage 2's original loop and report “no correct seam.”
 - **Redact before display:** replace credentials, cookies, user data, and signed URLs with `<REDACTED>` in logs, requests, HARs, traces, dumps, and environment output.
 - **Permission is separate from evidence:** a general review request authorizes neither execution nor edits. Respect read-only scope. Git writes—including `worktree add`, `add`, `commit`, `push`, `merge`, `checkout`, and `stash`—require explicit authorization; testing or editing permission does not supply it. Reuse explicit existing authorization for its covered action; never require it twice.
+- **Adversarial dual-agent review for medium-or-higher risk:** root cause and final fix are each blind-reviewed by two independent agents (Codex and Claude) in opposed Red/Blue roles; the main agent adjudicates by executed evidence, never by vote or persuasion. See “Dual-Agent Red/Blue Review”.
 - **Two failed fixes maximum:** count attempts as defined in Stage 7, then stop patching and request new evidence or a planning flow with a pre-approved task list.
 
 ## Stage 0: Rules and Boundaries
@@ -113,6 +114,54 @@ Before analysis confirmation:
 
 For GitHub history or issue lookup, use `gh`, quote API URLs in shells, and exhaust pagination—including nested GraphQL comments/threads—before claiming complete coverage. A 100-row list is a preview. Lookup does not authorize publication.
 
+## Dual-Agent Red/Blue Review
+
+Two checkpoints share one mechanism: **R1 root-cause review** (after Stage 5b, before the Analysis Confirmation Gate) and **R2 final-fix review** (after Stage 7 GREEN, before Stage 8).
+
+### Trigger
+
+Run when repair risk (Stage 5b) is medium or higher—public interface, persistence, protocol, concurrency, migration, security, payments—or when a fix attempt has already failed once. Skip for low-risk single-point fixes and state “dual review: not triggered, risk low”. A user may still request it explicitly.
+
+### Agents and Fallback
+
+- Use one Codex agent (`codex exec -s read-only`, non-interactive) and one Claude agent (Agent tool). Check availability first (`command -v codex`; Agent tool present).
+- **Models and effort (fixed):** Claude agent = the highest available Opus version at run time (e.g. if Opus 5.5 is the newest, use `claude-opus-5-5`; take the newest Opus ID from the environment/model list, never hardcode a version in this skill); Codex agent = the highest available Sol model. Both at reasoning effort `medium`.
+  - Claude: Agent tool with `model: "opus"` (resolves to the newest Opus) and `effort: "medium"`; if the environment lists an explicit newer Opus ID, state it in the report.
+  - Codex: discover the newest Sol via `codex debug models` (filter slugs ending in `-sol`, `visibility: list`, lowest `priority` number = highest/newest; e.g. `gpt-6.2-sol`), then run `codex exec -m <that-slug> -c model_reasoning_effort=medium -s read-only`. Do not rely on `~/.codex/config.toml` defaults (its default effort may be `low`).
+  - If the newest Opus/Sol is unavailable, use the next-highest of the same family and record the actual model IDs and effort used; never silently substitute a different family (use the fallback rule below only for whole-agent unavailability).
+- If either is unavailable, fall back to two isolated agents of the available kind and report “not cross-model” in the review result. If neither is available, mark the review `blocked`; never simulate it in the main context.
+- Reviewers are read-only: no edits, no Git writes, no production instrumentation. Each runs in an isolated context and cannot see the other's output during its round.
+
+### Blind Input
+
+Give reviewers only: the redacted symptom inventory, the reproduction/loop command and output, the repository path/diff, and the review scope below. **Do not pass** the main agent's root-cause conclusion, ranking, preferred fix, or any leaning; do not ask them to choose between named options. Apply the redaction rule before anything leaves the machine (Codex is an external service): no credentials, cookies, user data, signed URLs; follow repository privacy/GDPR rules.
+
+### Roles
+
+- **Red (attacker):** tries to refute the root cause or the fix. Every claim must come with an executable falsifier: a failing test, a triggering input, or a concrete unfixed sibling call site with `file:line`. An opinion without a falsifier is recorded as “unverified concern”, not a finding.
+- **Blue (defender):** tries to establish that the root cause/fix holds. Every claim must come with executed commands and retained redacted output.
+- Assign Codex and Claude to opposite roles in round 1 and swap in round 2, so no model's disposition decides the outcome. Maximum 2 rounds, consistent with the two-failed-fix limit.
+
+### Adjudication
+
+The main agent executes each side's evidence and decides by results. No majority vote, no model acts as judge, and rhetoric does not count. If executed evidence from both sides conflicts or cannot be run, stop and hand the dispute to the user with both evidence sets; do not pick silently. A Red falsifier that reproduces counts as a failed R2 and as one fix attempt (Stage 7).
+
+### Review Scope (each answered with evidence)
+
+R1 (root cause): Is the localized `file:line` mechanism causally sufficient for every recorded symptom? Which symptoms or hypotheses remain unexplained? Is any competing hypothesis unfalsified?
+
+R2 (final fix):
+
+1. **Fixed?** Rerun the original, unminimized scenario and the Stage 2 loop; reading code alone does not count.
+2. **Spread or sibling?** Is this one instance of a wider defect? Search the repository for the same pattern/contract/shared state and list sibling call sites with status (fixed / also affected / unaffected, with reason); decide whether the fix addresses the root cause or only the symptom.
+3. **Side effects?** List changed behavior, callers, shared state, persistence/protocol boundaries; verify with existing and characterization tests that no other logic changes or new bug appears; map to the Stage 5b regression rows.
+4. **Test validity:** with the fix reverted in a scratch copy/worktree-safe way, the regression test must fail again; otherwise it does not guard the bug.
+5. **Minimality:** the diff contains nothing unrelated to the confirmed root cause.
+
+### Result
+
+Report per scope item: actual model IDs and effort of both agents, verdict, Red falsifiers and their execution results, Blue evidence, agent kinds used (cross-model or fallback), rounds, and unresolved disputes. Unexecuted checks stay `pending`; approval by a reviewer cannot turn a hypothesis into proof. Open items from R2 block Stage 8 completion.
+
 ## Analysis Confirmation Gate
 
 Before Stage 6, send the analysis report once. Wait for explicit implementation confirmation unless existing explicit authorization already covers the proposed fix and scope. Do not repeat covered permissions or the instrumentation gate; identify genuine unresolved permissions separately. Analysis confirmation does not implicitly authorize Git writes.
@@ -124,6 +173,7 @@ Include:
 3. Open investigation suggestions, historical changes, and related bugs;
 4. Must-test/suggested/spot-check scope, risk, proposed changes, and compared options;
 5. Unresolved evidence, permission needs, and conditions required before implementation.
+6. R1 dual-agent root-cause review result (or “not triggered, risk low” / `blocked`).
 
 ## Stage 6: Isolation and RED
 
@@ -144,11 +194,14 @@ Failure to reach GREEN, or continued failure of the original loop, counts as one
 
 Run applicable static, build, contract, database, native-platform, and device checks identified from the actual project.
 
+When the Dual-Agent trigger applies, run R2 now, before Stage 8.
+
 ## Stage 8: Cleanup and Delivery
 
 Before claiming completion:
 
 - Verify the original loop and regression test pass; disclose missing-seam limitations.
+- If triggered, confirm R2 dual-agent review finished with no open Red falsifier, and include its result in the delivery report.
 - Remove every recorded `[DEBUG-<short-tag>]` probe. Delete skill-created throwaway harnesses or move them to a clearly labeled debug location; preserve unrelated user work.
 - Run the project's full test suite, static checks, and necessary E2E entry points. Separately run/report tests from matching historical commits, or write “historical check: no hit.” Require `git diff --check` to pass.
 - Report actual commands, exit codes, pass/fail counts, and unverified coverage. Record the confirmed root cause in an authorized commit/PR description or bug archive.
